@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Timothy J Divoll" />
+
+
+<title>Bat Diet via DNA Metabarcoding – Illumina MiSeq and Ion Torrent PGM</title>
+
+<script src="BatDietWorkflow3_files/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="BatDietWorkflow3_files/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="BatDietWorkflow3_files/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="BatDietWorkflow3_files/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="BatDietWorkflow3_files/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="BatDietWorkflow3_files/navigation-1.1/tabsets.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #0000ff; } /* Keyword */
+code > span.ch { color: #008080; } /* Char */
+code > span.st { color: #008080; } /* String */
+code > span.co { color: #008000; } /* Comment */
+code > span.ot { color: #ff4000; } /* Other */
+code > span.al { color: #ff0000; } /* Alert */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #008000; font-weight: bold; } /* Warning */
+code > span.cn { } /* Constant */
+code > span.sc { color: #008080; } /* SpecialChar */
+code > span.vs { color: #008080; } /* VerbatimString */
+code > span.ss { color: #008080; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { } /* Variable */
+code > span.cf { color: #0000ff; } /* ControlFlow */
+code > span.op { } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #ff4000; } /* Preprocessor */
+code > span.do { color: #008000; } /* Documentation */
+code > span.an { color: #008000; } /* Annotation */
+code > span.cv { color: #008000; } /* CommentVar */
+code > span.at { } /* Attribute */
+code > span.in { color: #008000; } /* Information */
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+<link rel="stylesheet" href="C:\Users\Owner\Documents\R\win-library\3.3\markdown\resources\kable.css" type="text/css" />
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Bat Diet via DNA Metabarcoding – Illumina MiSeq and Ion Torrent PGM</h1>
+<h3 class="subtitle"><em>Supporting Information for ms in Molecular Ecology Resources – Comparing prey DNA recovery from bat fecal samples sequenced on two different second-generation platforms</em></h3>
+<h4 class="author"><em>Timothy J Divoll</em></h4>
+<h4 class="date"><em>27 February, 2017</em></h4>
+
+</div>
+
+<div id="TOC">
+<ul>
+<li><a href="#install-and-setup"><a id="Install"></a>Install and Setup</a><ul>
+<li><a href="#virtual-box-settings"><em>Virtual Box Settings</em></a></li>
+<li><a href="#virtual-box-processor-cores"><em>Virtual Box Processor Cores</em></a></li>
+<li><a href="#virtual-box-memory"><em>Virtual Box Memory</em></a></li>
+</ul></li>
+<li><a href="#illumina-miseq-workflow-run-commands-in-unix"><a id="Illumina MiSeq"></a>Illumina MiSeq Workflow – <strong><em>Run commands in UNIX</em></strong></a><ul>
+<li><a href="#organize-r1-and-r2-files"><strong>1)</strong> Organize R1 and R2 Files</a></li>
+<li><a href="#join-paired-ends"><strong>2)</strong> Join Paired Ends</a></li>
+<li><a href="#quality-filter-and-assign-sample-ids-to-sequences"><strong>3)</strong> Quality Filter and Assign Sample IDs to Sequences</a></li>
+<li><a href="#trim-primers"><strong>4)</strong> Trim Primers</a></li>
+<li><a href="#assign-similar-sequences-to-otus"><strong>5)</strong> Assign Similar Sequences to OTUs</a></li>
+<li><a href="#build-and-filter-otu-occurrence-table-biom"><strong>6)</strong> Build and Filter OTU Occurrence Table (BIOM)</a></li>
+</ul></li>
+<li><a href="#ion-torrent-pgm-workflow-run-commands-in-unix"><a id="Ion Torrent"></a>Ion Torrent PGM Workflow – <strong><em>Run commands in UNIX</em></strong></a><ul>
+<li><a href="#organize-forward-and-reverse-files"><strong>1)</strong> Organize Forward and Reverse Files</a></li>
+<li><a href="#prepare-barcodes-for-each-file"><strong>2)</strong> Prepare Barcodes for each File</a></li>
+<li><a href="#concatenate-forward-fastq-files"><strong>3)</strong> Concatenate Forward FASTQ files</a></li>
+<li><a href="#convert-fastq-to-fasta"><strong>4)</strong> Convert FASTQ to FASTA</a></li>
+<li><a href="#validate-mapping-file"><strong>5)</strong> Validate Mapping File</a></li>
+<li><a href="#demultiplex-and-quality-filter"><strong>6)</strong> Demultiplex and Quality Filter</a></li>
+<li><a href="#repeat-steps-26-for-reverse-fastq-files"><strong>7)</strong> Repeat steps 2–6 for Reverse FASTQ files</a></li>
+<li><a href="#concatenate-forward-and-reverse-to-1-file"><strong>8)</strong> Concatenate Forward and Reverse to 1 File</a></li>
+<li><a href="#assign-similar-sequences-to-otus-1"><strong>9)</strong> Assign Similar Sequences to OTUs</a></li>
+<li><a href="#build-and-filter-otu-occurrence-table-biom-1"><strong>10)</strong> Build and Filter OTU Occurrence Table (BIOM)</a></li>
+</ul></li>
+<li><a href="#assign-taxonomy-and-filter-results-run-commands-in-r"><a id="Assign Taxonomy"></a>Assign Taxonomy and Filter Results – <strong><em>Run commands in R</em></strong></a><ul>
+<li><a href="#rstudio-and-r-notebooks"><strong>1)</strong> RStudio and R Notebooks</a></li>
+<li><a href="#set-working-directory-and-read-in-data"><strong>2)</strong> Set Working Directory and Read in Data</a></li>
+<li><a href="#query-bold-for-otu-matches"><strong>3)</strong> Query BOLD for OTU Matches</a></li>
+<li><a href="#trim-output-by-user-specific-number-of-matches"><strong>4)</strong> Trim Output by User-specific Number of Matches</a></li>
+<li><a href="#filter-out-seqs-98-and-unlikely-by-geography"><strong>5)</strong> Filter out Seqs &lt; 98% and Unlikely by Geography</a></li>
+</ul></li>
+<li><a href="#manual-vetting-of-results-work-in-a-web-browser"><a id="Manual Vetting"></a>Manual Vetting of Results – <strong><em>Work in a Web Browser</em></strong></a><ul>
+<li><a href="#updating-the-biom-table-with-taxonomy"><em>Updating the BIOM table with Taxonomy</em></a></li>
+<li><a href="#discrepancy-example"><em>Discrepancy Example</em></a></li>
+<li><a href="#find-the-sequence-in-question"><em>Find the Sequence in Question</em></a></li>
+<li><a href="#paste-sequence-into-bold"><em>Paste Sequence into BOLD</em></a></li>
+<li><a href="#re-examine-the-matches"><em>Re-examine the Matches</em></a></li>
+<li><a href="#cross-reference-with-expectations"><em>Cross-reference with Expectations</em></a></li>
+</ul></li>
+</ul>
+</div>
+
+<p><br></p>
+<div id="install-and-setup" class="section level1">
+<h1><a id="Install"></a>Install and Setup</h1>
+<div id="this-tutorial-provides-guidance-on-how-to-transform-raw-ion-torrent-or-illumina-miseq-amplicon-data-into-otus-for-taxonomic-assignment.-the-workflow-includes-unix-commands-to-call-qiime-httpqiime.org-and-fastx-toolkit-httphannonlab.cshl.edufastx_toolkitdownload.html-scripts-to-quality-filter-and-cluster-sequences-before-using-python-scripts-and-r-packages-to-filter-and-clean-data-for-taxonomic-assignment." class="section level4">
+<h4>This tutorial provides guidance on how to transform raw Ion Torrent <strong>or</strong> Illumina MiSeq amplicon data into OTUs for taxonomic assignment. The workflow includes UNIX commands to call QIIME (<a href="http://qiime.org/" class="uri">http://qiime.org/</a>) and FASTX Toolkit (<a href="http://hannonlab.cshl.edu/fastx_toolkit/download.html" class="uri">http://hannonlab.cshl.edu/fastx_toolkit/download.html</a>) scripts to quality filter and cluster sequences before using Python scripts and R packages to filter and clean data for taxonomic assignment.</h4>
+</div>
+<div id="we-recommend-first-running-through-the-entire-process-outlined-in-this-document-with-the-provided-test-data-sets-to-make-sure-all-software-is-installed-properly-under-reduced-processing-loads-i.e.-only-a-couple-samples.-materials-are-available-here-httpsgithub.comtdivollbat-diet-metabarcoding" class="section level4">
+<h4>We recommend first running through the entire process outlined in this document with the provided test data sets to make sure all software is installed properly under reduced processing loads (i.e., only a couple samples). Materials are available here: <a href="https://github.com/tdivoll/Bat-Diet-Metabarcoding" class="uri">https://github.com/tdivoll/Bat-Diet-Metabarcoding</a></h4>
+</div>
+<div id="the-first-section-must-be-performed-in-unix-httpopengroup.orgunix-macqiime-httpwww.wernerlab.orgsoftwaremacqiime-or-through-a-virtual-machine-running-unix-as-outlined-here-httpqiime.orginstallvirtual_box.html.-we-used-the-recommended-qiime-virtual-box-install-on-a-windows-machine-with-16gb-ram-and-oracle-virtual-box-version-5.0.8-r103449-httpswww.virtualbox.orgwikidownloads." class="section level4">
+<h4>The first section must be performed in UNIX (<a href="http://opengroup.org/unix" class="uri">http://opengroup.org/unix</a>), Macqiime (<a href="http://www.wernerlab.org/software/macqiime" class="uri">http://www.wernerlab.org/software/macqiime</a>), or through a Virtual Machine running UNIX, as outlined here: (<a href="http://qiime.org/install/virtual_box.html" class="uri">http://qiime.org/install/virtual_box.html</a>). We used the recommended QIIME Virtual Box install on a Windows machine with 16GB RAM and Oracle Virtual Box Version 5.0.8 r103449 (<a href="https://www.virtualbox.org/wiki/Downloads" class="uri">https://www.virtualbox.org/wiki/Downloads</a>).</h4>
+</div>
+<div id="in-the-qiime-vb-system-settings-we-changed-default-settings-to-allow-4-cores-and-11-gb-of-virtual-memory." class="section level4">
+<h4>In the QIIME VB System Settings, we changed default settings to allow 4 cores and 11 GB of virtual memory.</h4>
+</div>
+<div id="virtual-box-settings" class="section level3">
+<h3><em>Virtual Box Settings</em></h3>
+<div class="figure">
+<img src="BatDietWorkflow_files/VBMain.jpg" />
+
+</div>
+<p><br></p>
+</div>
+<div id="virtual-box-processor-cores" class="section level3">
+<h3><em>Virtual Box Processor Cores</em></h3>
+<div class="figure">
+<img src="BatDietWorkflow_files/VBCores.jpg" />
+
+</div>
+<p><br></p>
+</div>
+<div id="virtual-box-memory" class="section level3">
+<h3><em>Virtual Box Memory</em></h3>
+<div class="figure">
+<img src="BatDietWorkflow_files/VBMem.jpg" />
+
+</div>
+<p><br></p>
+</div>
+</div>
+<div id="illumina-miseq-workflow-run-commands-in-unix" class="section level1">
+<h1><a id="Illumina MiSeq"></a>Illumina MiSeq Workflow – <strong><em>Run commands in UNIX</em></strong></h1>
+<p><br></p>
+<div id="if-you-only-have-iontorrent-data-skip-the-illumina-miseq-section-and-go-to-the-ion-torrent-section." class="section level4">
+<h4>If you only have IonTorrent data, skip the [Illumina MiSeq] section and go to the <a href="#Ion%20Torrent">Ion Torrent</a> section.</h4>
+<p><br></p>
+</div>
+<div id="all-commands-in-this-section-were-run-inside-the-qiime-virtual-box-created-above-in-the-install-section.-open-the-qiime-machine-and-start-a-new-terminal-window.-it-should-provide-a-command-line-prompt-similar-to-this-qiimeqiime-190-virtual-box" class="section level4">
+<h4>All commands in this section were run inside the QIIME Virtual Box created above in the <a href="#Install">Install</a> section. Open the QIIME machine and start a new Terminal window. It should provide a command line prompt similar to this: <a href="mailto:qiime@qiime-190-virtual-box">qiime@qiime-190-virtual-box</a>:</h4>
+<p><br></p>
+</div>
+<div id="if-you-will-be-using-a-similar-workflow-more-than-once-it-helps-to-use-the-time-unix-command-in-front-of-other-commands.-this-command-returns-the-processing-time-in-minutes-and-seconds-which-simply-helps-plan-future-data-analyses.-for-example" class="section level4">
+<h4>If you will be using a similar workflow more than once, it helps to use the <strong><code>time</code></strong> UNIX command in front of other commands. This command returns the processing time, in minutes and seconds, which simply helps plan future data analyses. For example:</h4>
+<div class="figure">
+<img src="BatDietWorkflow_files/timeEx.jpg" />
+
+</div>
+<p><br></p>
+</div>
+<div id="organize-r1-and-r2-files" class="section level3">
+<h3><strong>1)</strong> Organize R1 and R2 Files</h3>
+<div id="first-load-all-compressed-r1-and-r2-.fastq.gz-paired-files-into-a-new-folder-such-as-2014miseq-drag-and-drop-from-windows-to-virtual-box-or-use-mv-if-working-directly-in-unix-or-macqiime" class="section level4">
+<h4>First load all compressed R1 and R2 *.fastq.gz paired files into a new folder, such as: <strong><code>2014MISEQ</code></strong> ####Drag and drop from Windows to Virtual Box or use <strong><code>mv</code></strong> if working directly in UNIX or Macqiime <br></h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">mkdir</span> 2014MISEQ   </code></pre></div>
+</div>
+<div id="qiime-will-not-accept-underscores-or-hyphens-in-sample-ids-used-in-the-qiime-process-thus-you-may-have-to-rename-folder-names-so-there-are-no-underscores-before-l001-change-underscores-and-hyphens-to-periods-except-after-l001.-everything-before-l001-will-become-the-sample-id.-an-example-of-bash-code-to-do-this-follows" class="section level4">
+<h4>QIIME will not accept underscores or hyphens in Sample IDs used in the QIIME process, thus, you may have to rename folder names so there are no underscores before L001; change underscores and hyphens to periods, except after L001. Everything before L001 will become the Sample ID. An example of bash code to do this follows:</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash   #save this as a script called fixfilenames.sh and save in your Project folder</span>
+<span class="kw">cd</span> <span class="ot">$1</span><span class="kw">;</span>
+<span class="kw">for</span> <span class="kw">file</span> in *L001*<span class="kw">;</span> <span class="kw">do</span>
+  <span class="kw">fp</span> = <span class="st">&quot;</span><span class="ot">${file%</span>L001*<span class="ot">}</span><span class="st">&quot;</span><span class="kw">;</span>
+  <span class="kw">lp</span> = <span class="st">&quot;</span><span class="ot">${file#</span>*L001<span class="ot">}</span><span class="st">&quot;</span><span class="kw">;</span>
+  <span class="kw">new</span> = <span class="st">&quot;</span><span class="ot">${fp//</span>_<span class="ot">/</span>.<span class="ot">}</span><span class="st">L001</span><span class="ot">$lp</span><span class="st">&quot;</span><span class="kw">;</span>
+  <span class="kw">mv</span> <span class="st">&quot;</span><span class="ot">$file</span><span class="st">&quot;</span> <span class="st">&quot;</span><span class="ot">$new</span><span class="st">&quot;</span><span class="kw">;</span>
+<span class="kw">done</span></code></pre></div>
+</div>
+<div id="now-change-permissions-and-run-the-script." class="section level4">
+<h4>Now change permissions and run the script.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> 2014MISEQ
+
+<span class="kw">chmod</span> u+x fixfilenames.sh
+
+<span class="kw">./fixfilenames.sh</span></code></pre></div>
+<p><br></p>
+</div>
+</div>
+<div id="join-paired-ends" class="section level3">
+<h3><strong>2)</strong> Join Paired Ends</h3>
+<div id="next-we-join-corresponding-paired-reads-r1-and-r2-for-each-sample-to-increase-read-quality-and-propagate-that-quality-on-through-to-taxonomic-assignment.-this-command-will-accept-zipped-files-so-there-is-no-need-to-extract-first." class="section level4">
+<h4>Next, we join corresponding paired reads <strong><em>(R1 and R2)</em></strong> for each sample to increase read quality and propagate that quality on through to taxonomic assignment. This command will accept zipped files so there is no need to extract first.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">multiple_join_paired_ends.py</span> -i /home/qiime/2014MISEQ -o /home/qiime/2014MISEQ/joined_seqs
+<span class="co">#took 10 secs with test set</span></code></pre></div>
+</div>
+<div id="we-output-the-joined-sequence-files-1-per-bat-sample-into-a-new-directory-called-joined_seqs" class="section level4">
+<h4>We output the joined sequence files, 1 per bat sample, into a new directory called: <strong><code>joined_seqs</code></strong></h4>
+</div>
+<div id="now-we-take-out-the-unjoined-sequences-so-they-do-not-get-mixed-up-in-downstream-analyses.-you-may-prefer-to-save-these-somewhere-if-they-could-be-useful-to-your-particular-application." class="section level4">
+<h4>Now we take out the <strong>unjoined sequences</strong> so they do not get mixed up in downstream analyses. You may prefer to save these somewhere if they could be useful to your particular application.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> joined_seqs     <span class="co">#change directory to the newly created joined_seqs directory</span>
+
+<span class="kw">find</span> . -name <span class="st">&quot;*.un1.fastq&quot;</span> -type f -delete     <span class="co">#do this exactly as written to avoid deleting other files</span>
+
+<span class="kw">find</span> . -name <span class="st">&quot;*.un2.fastq&quot;</span> -type f -delete</code></pre></div>
+<p><br></p>
+</div>
+</div>
+<div id="quality-filter-and-assign-sample-ids-to-sequences" class="section level3">
+<h3><strong>3)</strong> Quality Filter and Assign Sample IDs to Sequences</h3>
+<div id="illumina-miseq-platform-trims-nextera-indices-and-adaptors-prior-to-writing-sequence-data-to-basespace.-however-we-still-use-qiimes-split_libraries-script-to-assign-sample-ids-to-each-individual-sequence-using-folder-names-and-concatenate-all-joined-sequences-into-one-file-for-downstream-analyses." class="section level4">
+<h4>Illumina MiSeq platform trims Nextera indices and adaptors prior to writing sequence data to BaseSpace. However, we still use QIIME’s split_libraries script to assign Sample IDs to each individual sequence using folder names and concatenate all joined sequences into one file for downstream analyses.</h4>
+</div>
+<div id="default-quality-filtering-parameters-are-applied-here-so-that-base-calls-less-than-q25-and-sequences-less-than-200-bp-are-removed.-these-paramters-can-be-changed-with-the--s-min_qual_score-and--l-min_seq_length-options.-our-expected-length-at-this-step-is-211-bp." class="section level4">
+<h4>Default quality filtering parameters are applied here so that base calls less than Q25 and sequences less than 200 bp are removed. These paramters can be changed with the <strong><code>-s (min_qual_score)</code></strong> and <strong><code>-l (min_seq_length)</code></strong> options. Our expected length at this step is 211 bp.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> ..     <span class="co">#change directory back to the main working directory</span>
+
+<span class="kw">multiple_split_libraries_fastq.py</span> -i /home/qiime/2014MISEQ/joined_seqs -o /home/qiime/2014MISEQ/split_out --demultiplexing_method sampleid_by_file --include_input_dir_path --remove_filepath_in_name  <span class="co">#took 16 secs with test set</span></code></pre></div>
+</div>
+<div id="we-output-the-resulting-fasta-file-qiime-uses-the-file-extension-.fna-and-log-files-into-a-new-directory-called-split_out" class="section level4">
+<h4>We output the resulting FASTA file (QIIME uses the file extension .fna) and log files into a new directory called: <strong><code>split_out</code></strong></h4>
+<div id="this-step-can-take-a-while-to-run-so-one-can-make-sure-qiime-is-not-hung-up-by-occasionally-going-into-the-newly-created-directory-and-right-clicking-on-the-output-file-to-check-file-size-and-make-sure-it-grows-between-checks.-the-process-is-done-when-the-cursor-prompt-returns-to-the-terminal-window." class="section level5">
+<h5><strong>This step can take a while to run, so one can make sure QIIME is not hung up by occasionally going into the newly created directory and right clicking on the output file to check file size and make sure it grows between checks. The process is done when the cursor prompt returns to the terminal window.</strong></h5>
+<p><br></p>
+</div>
+</div>
+</div>
+<div id="trim-primers" class="section level3">
+<h3><strong>4)</strong> Trim Primers</h3>
+<div id="now-we-need-to-remove-zeale-primers-from-the-5-and-3-ends-of-each-sequence.-it-is-easiest-to-remove-the-reverse-primer-first-from-the-3-end-then-reverse-complement-the-sequences-remove-the-forward-primer-which-is-now-in-a-reverse-orientation-on-the-3-end-then-reverse-complement-the-sequences-again-so-they-are-back-in-the-5-3-direction-with-both-primers-removed." class="section level4">
+<h4>Now we need to remove Zeale primers from the 5’ <strong>and</strong> 3’ ends of each sequence. It is easiest to remove the reverse primer first from the 3’ end, then reverse complement the sequences, remove the forward primer which is now in a reverse orientation on the 3’ end, then reverse complement the sequences again so they are back in the 5’ –&gt; 3’ direction with both primers removed.</h4>
+</div>
+<div id="first-we-validate-the-mapping-file-which-tells-qiime-what-the-primer-sequences-should-be." class="section level4">
+<h4>First we validate the mapping file which tells QIIME what the primer sequences should be.</h4>
+</div>
+<div id="if-qiime-flags-any-errors-make-changes-as-necessary-help-can-be-found-here-httpqiime.orgscriptsvalidate_mapping_file.html" class="section level4">
+<h4>If QIIME flags any errors, make changes as necessary; help can be found here: <a href="http://qiime.org/scripts/validate_mapping_file.html" class="uri">http://qiime.org/scripts/validate_mapping_file.html</a></h4>
+<p><br></p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">validate_mapping_file.py</span> -m SampleMapFile.txt  <span class="co">#good practice to make sure all columns are in correct format</span>
+
+<span class="kw">truncate_reverse_primer.py</span> -f ./split_out/seqs.fna -m ./SampleMapFile.txt -z truncate_remove -M 1 -o ./Rtruncated</code></pre></div>
+</div>
+<div id="the-.fna-file-is-our-sequence-file-and-the-samplemapfile.txt-is-the-mapping-file-with-forward-and-reverse-primer-sequence-info.-in-this-case-we-allow-1-mismatch-in-the-primer-sequence.-the-mapping-file-must-have-unique-barcodes-for-each-sample.-becasue-the-barcodes-are-already-removed-by-illumina-we-simply-concatenated-forward-and-reverse-indexes-used-in-the-sequencing-process-so-each-sample-has-a-unique-barcode-to-satisfy-the-validate_mapping_file.py" class="section level4">
+<h4>The .fna file is our sequence file, and the SampleMapFile.txt is the mapping file with forward and reverse primer sequence info. In this case, we allow 1 mismatch in the primer sequence. The mapping file must have unique barcodes for each sample. Becasue the barcodes are already removed by Illumina, we simply concatenated forward and reverse indexes used in the sequencing process so each sample has a unique ‘barcode’ to satisfy the <code>validate_mapping_file.py</code>:</h4>
+<div class="figure">
+<img src="BatDietWorkflow_files/MapEx.jpg" />
+
+</div>
+</div>
+<div id="we-reverse-complement-the-sequences-using-the-fastx-toolkit-which-must-be-installed-in-our-qiime-virtual-box-or-directly-in-macqiime-or-linux-in-the-main-working-directory-then-again-remove-reverse-primers-and-flip-sequences-back.-we-used-a-local-copy-of-fastx-toolkit-0.0.12.-reverse-complementing-can-also-be-done-with-the-qiime-adjust_seq_orientation.py-script.-we-used-the-fastx-command-because-we-will-use-another-fastx-tool-later-in-this-section." class="section level4">
+<h4>We reverse complement the sequences using the FASTX Toolkit, which must be installed in our QIIME Virtual Box or directly in Macqiime or Linux in the main working directory, then again remove reverse primers, and flip sequences back. We used a local copy of FASTX Toolkit 0.0.12. Reverse complementing can also be done with the QIIME <strong><code>adjust_seq_orientation.py</code></strong> script. We used the FASTX command because we will use another FASTX tool later in this section.</h4>
+<p><br></p>
+<div id="note-that-a-separate-mapping-file-is-needed-with-primer-sequences-also-reverse-complemented-samplemapfile_reverse.txt." class="section level5">
+<h5><strong>Note that a separate mapping file is needed with primer sequences also reverse complemented: <code>SampleMapFile_reverse.txt</code>.</strong></h5>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">fastx_reverse_complement</span> -i ./Rtruncated/seqs_rev_primer_truncated.fna -o ./Rcomp
+
+<span class="kw">truncate_reverse_primer.py</span> -f ./Rcomp -m ./SampleMapFile_reverse.txt -z truncate_remove -M 1 -o ./Rcomp_forward_removed
+
+<span class="kw">fastx_reverse_complement</span> -i ./Rcomp_forward_removed/Rcomp_rev_primer_truncated.fna -o ./trimmed_seqs.fna</code></pre></div>
+</div>
+</div>
+<div id="we-now-have-a-file-called-trimmed_seqs.fna-with-all-primers-removed." class="section level4">
+<h4>We now have a file called <strong><code>trimmed_seqs.fna</code></strong> with all primers removed.</h4>
+<p><br></p>
+</div>
+</div>
+<div id="assign-similar-sequences-to-otus" class="section level3">
+<h3><strong>5)</strong> Assign Similar Sequences to OTUs</h3>
+<div id="next-we-cluster-similar-sequences-using-the-local-alignmnet-swarm-method-and-allowing-only-a-2-bp-mismatch.-note-that-this-sequence-clustering-is-different-than-clustering-of-amplicons-on-the-flow-cell-during-illumina-sequencing." class="section level4">
+<h4>Next we cluster similar sequences using the local alignmnet ‘swarm’ method and allowing only a 2 bp mismatch. Note that this sequence clustering is different than clustering of amplicons on the flow cell during Illumina sequencing.</h4>
+<div id="mahe-f-rognes-t-quince-c-de-vargas-c-dunthorn-m.-2014-swarm-robust-and-fast-clustering-method-for-amplicon-based-studies.-peerj-2e593-httpdx.doi.org10.7717peerj.593" class="section level6">
+<h6>Mahé F, Rognes T, Quince C, de Vargas C, Dunthorn M. (2014) Swarm: robust and fast clustering method for amplicon-based studies. PeerJ 2:e593 <a href="http://dx.doi.org/10.7717/peerj.593" class="uri">http://dx.doi.org/10.7717/peerj.593</a></h6>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">pick_otus.py</span> -i ./trimmed_seqs.fna -m swarm --swarm_resolution 2 -o ./swarmOTUs    <span class="co">#took 18 sec with test set</span></code></pre></div>
+</div>
+</div>
+<div id="now-we-have-a-new-directory-with-the-clusters-of-sequences-swarmotus" class="section level4">
+<h4>Now we have a new directory with the clusters of sequences: <strong><code>swarmOTUs</code></strong></h4>
+<div id="this-step-can-take-a-while-to-run-and-no-files-are-produced-until-the-process-is-complete.-one-can-make-sure-qiime-is-not-hung-up-by-using-the-top-unix-command-in-a-new-terminal-window.-the-pick-otus-qiime-command-should-normally-be-at-the-top-of-the-list-and-using-the-greatest-cpu." class="section level5">
+<h5><strong>This step can take a while to run, and no files are produced until the process is complete. One can make sure QIIME is not hung up by using the</strong> <strong><code>top</code></strong> <strong>UNIX command in a new terminal window. The pick-otus QIIME command should normally be at the top of the list and using the greatest %CPU.</strong></h5>
+<p><br></p>
+</div>
+</div>
+</div>
+<div id="build-and-filter-otu-occurrence-table-biom" class="section level3">
+<h3><strong>6)</strong> Build and Filter OTU Occurrence Table (BIOM)</h3>
+<div id="we-now-create-our-biom-table-to-keep-track-of-which-otus-were-present-in-each-sample.-we-use-the-new-swarm-output-file-trimmed_seqs_otus.txt-as-input." class="section level4">
+<h4>We now create our BIOM table to keep track of which OTUs were present in each sample. We use the new swarm output file <strong><code>trimmed_seqs_otus.txt</code></strong> as input.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">make_otu_table.py</span> -i ./swarmOTUs/trimmed_seqs_otus.txt -o ./swarmOTUs/seqs.biom</code></pre></div>
+<p>We filter out low abundance OTU clusters (&lt; 10 copies in at least 1 sample of the entire data set) before writing data to the table using a script that calls the ‘pandas’ python package. We used Python 2.7.3 that should come as a dependency with the QIIME install. The provided ‘pandas_filter10.py’ script has to be in the <strong><code>swarmOTUs</code></strong> directory.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> ./swarmOTUs     <span class="co">#change to the new directory</span>
+
+<span class="kw">cp</span> ../pandas_filter10.py .
+
+<span class="kw">python</span> pandas_filter10.py     <span class="co">#This script will find the seqs.biom file created as output in the last step</span></code></pre></div>
+</div>
+<div id="this-script-creates-a-new-file-called-exclude.txt-that-we-can-use-in-the-next-step-to-remove-those-low-abundance-otu-clusters." class="section level4">
+<h4>This script creates a new file called <strong><code>exclude.txt</code></strong> that we can use in the next step to remove those low abundance OTU clusters.</h4>
+</div>
+<div id="after-removing-the-unwanted-low-abundance-otu-clusters-we-write-the-desired-otus-to-a-biom-table-in-human-readable-tabular-format.-to-label-the-denovo-otus-we-use-the-pick_rep_set.py-script-to-pick-one-representative-sequence-from-each-cluster.-then-we-pull-those-desired-representative-sequences-from-our-original-.fna-file-and-write-a-new-.fna.-from-here-on-out-we-use-the-representative-sequences-from-each-otu-cluster-to-reduce-processing-demand." class="section level4">
+<h4>After removing the unwanted low abundance OTU clusters, we write the desired OTUs to a BIOM table in human-readable tabular format. To label the denovo OTUs, we use the <strong><code>pick_rep_set.py</code></strong> script to pick one representative sequence from each cluster. Then we pull those desired representative sequences from our original .fna file and write a new .fna. From here on out, we use the representative sequences from each OTU cluster to reduce processing demand.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> ..     <span class="co">#change back to the main working directory</span>
+
+<span class="kw">filter_otus_from_otu_table.py</span> -i ./swarmOTUs/seqs.biom -o ./swarmOTUs/otu_table_no_singletons.biom -e ./swarmOTUs/exclude.txt
+
+<span class="kw">biom</span> convert -i ./swarmOTUs/otu_table_no_singletons.biom -o ./swarmOTUs/2014_biom_no_singletons.txt --table-type=<span class="st">&quot;OTU table&quot;</span> --to-tsv
+
+<span class="kw">pick_rep_set.py</span> -i ./swarmOTUs/trimmed_seqs_otus.txt -f ./trimmed_seqs.fna -m most_abundant -o ./2014_final.fna -l ./2014final_log
+
+<span class="kw">filter_fasta.py</span> -f ./2014_final.fna -b ./swarmOTUs/otu_table_no_singletons.biom -o ./2014_final_no_singletons.fna</code></pre></div>
+</div>
+<div id="the-last-command-in-unix-will-convert-our-final-fasta-file-to-a-tab-delimited-file-we-can-use-to-assign-taxonomy-in-the-bold-database.-this-file-will-be-useful-when-resolving-taxonomic-discrepancies-in-the-last-section-manual-vetting-of-results.-the-fasta_formatter-command-is-part-of-the-fastx-toolkit.-we-run-the-command-and-then-manually-add-column-headers-to-the-text-file-called-seqid-and-seqs." class="section level4">
+<h4>The last command in UNIX will convert our final FASTA file to a tab-delimited file we can use to assign taxonomy in the BOLD database. This file will be useful when resolving taxonomic discrepancies in the last section: [Manual Vetting of Results]. The <strong><code>fasta_formatter</code></strong> command is part of the FASTX Toolkit. We run the command and then manually add column headers to the text file called: <strong>seqID</strong> and <strong>seqs</strong>.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">fasta_formatter</span> -i ./2014_final_no_singletons.fna -o ./2014tabseqs.txt -t</code></pre></div>
+</div>
+<div id="the-final-2014tabseqs.txt-file-will-look-like-this" class="section level4">
+<h4>The final <strong><code>2014tabseqs.txt</code></strong> file will look like this:</h4>
+<table>
+<thead>
+<tr class="header">
+<th align="left"><strong>seqID</strong></th>
+<th align="center"><strong>seqs</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">denovo0 F10R12_2</td>
+<td align="center">AATTTGAGCAG . . . . .</td>
+</tr>
+<tr class="even">
+<td align="left">denovo1 F10R12_1121</td>
+<td align="center">AATTTGAGCAGG . . . . .</td>
+</tr>
+<tr class="odd">
+<td align="left">denovo10 F1R13_166841</td>
+<td align="center">AAGATGAGCTGG . . . . .</td>
+</tr>
+<tr class="even">
+<td align="left">. . . . . . . . .</td>
+<td align="center">. . . . .</td>
+</tr>
+<tr class="odd">
+<td align="left">denovo789 F10R5_2482</td>
+<td align="center">AAGATGCCTGGAA . . . . .</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="if-you-only-have-illumina-data-skip-the-ion-torrent-section-and-go-to-the-assign-taxonomy-section" class="section level4">
+<h4>If you only have Illumina data, skip the <a href="#Ion%20Torrent">Ion Torrent</a> section and go to the <a href="#Assign%20Taxonomy">Assign Taxonomy</a> section</h4>
+<p><br></p>
+</div>
+</div>
+</div>
+<div id="ion-torrent-pgm-workflow-run-commands-in-unix" class="section level1">
+<h1><a id="Ion Torrent"></a>Ion Torrent PGM Workflow – <strong><em>Run commands in UNIX</em></strong></h1>
+<div id="the-ion-torrent-personal-genome-machine-pgm-is-widely-used-for-amplicon-sequencing-but-the-raw-machine-output-is-different-than-illumina.-ion-does-not-use-the-paired-end-read-system-thus-we-keep-forward-and-reverse-sequences-separate-and-do-not-try-to-join-sequences." class="section level4">
+<h4>The Ion Torrent Personal Genome Machine (PGM) is widely used for amplicon sequencing but the raw machine output is different than Illumina. Ion does not use the paired end read system; thus, we keep forward and reverse sequences separate and <em>do not</em> try to join sequences.</h4>
+</div>
+<div id="all-commands-in-this-section-were-run-inside-the-qiime-virtual-box-created-above-in-the-install-section.-open-the-qiime-machine-and-start-a-new-terminal-window.-it-should-provide-a-command-line-prompt-similar-to-this-qiimeqiime-190-virtual-box-1" class="section level4">
+<h4>All commands in this section were run inside the QIIME Virtual Box created above in the <a href="#Install">Install</a> section. Open the QIIME machine and start a new Terminal window. It should provide a command line prompt similar to this: <a href="mailto:qiime@qiime-190-virtual-box">qiime@qiime-190-virtual-box</a>:</h4>
+<p><br></p>
+</div>
+<div id="if-you-will-be-using-a-similar-workflow-more-than-once-it-helps-to-use-the-time-unix-command-in-front-of-other-commands.-this-command-returns-the-processing-time-in-minutes-and-seconds-which-simply-helps-plan-future-data-analyses.-for-example-1" class="section level4">
+<h4>If you will be using a similar workflow more than once, it helps to use the <strong><code>time</code></strong> UNIX command in front of other commands. This command returns the processing time, in minutes and seconds, which simply helps plan future data analyses. For example:</h4>
+<div class="figure">
+<img src="BatDietWorkflow_files/timeEx.jpg" />
+
+</div>
+<p><br></p>
+</div>
+<div id="organize-forward-and-reverse-files" class="section level3">
+<h3><strong>1)</strong> Organize Forward and Reverse Files</h3>
+<div id="amplicons-are-read-in-either-forward-or-reverse-direction-depending-on-which-end-attached-to-the-ion-chip.-thus-we-expect-1-fastq-file-for-each-unique-barcode-used.-in-our-case-we-double-barcoded-samples-n-50-46-bat-samples-4-blanks-with-10-unique-forward-primers-and-5-unique-reverse-primers-so-we-expect-15-fastq-files.-we-know-the-files-110-were-sequenced-in-the-forward-direction-and-files-1115-were-read-in-the-reverse-direction.-the-raw-output-folder-should-look-like-this" class="section level4">
+<h4>Amplicons are read in either forward <strong><em>or</em></strong> reverse direction, depending on which end attached to the Ion chip. Thus, we expect 1 FASTQ file for each unique barcode used. In our case, we double barcoded samples (n = 50; 46 bat samples + 4 blanks) with 10 unique forward primers and 5 unique reverse primers, so we expect 15 fastq files. We know the files 1–10 were sequenced in the forward direction and files 11–15 were read in the reverse direction. The raw output folder should look like this:</h4>
+<table>
+<thead>
+<tr class="header">
+<th align="center"><strong>File Name</strong></th>
+<th align="center"><strong>Direction</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">2015-03-20.IonXpress_001.fastq</td>
+<td align="center">forward</td>
+</tr>
+<tr class="even">
+<td align="center">2015-03-20.IonXpress_002.fastq</td>
+<td align="center">forward</td>
+</tr>
+<tr class="odd">
+<td align="center">2015-03-20.IonXpress_003.fastq</td>
+<td align="center">forward</td>
+</tr>
+<tr class="even">
+<td align="center">. . . . . . . . .</td>
+<td align="center">. . .</td>
+</tr>
+<tr class="odd">
+<td align="center">2015-03-20.IonXpress_014.fastq</td>
+<td align="center">reverse</td>
+</tr>
+<tr class="even">
+<td align="center">2015-03-20.IonXpress_015.fastq</td>
+<td align="center">reverse</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+</div>
+<div id="create-a-new-folder-and-move-the-expected-files-to-that-directory-i.e.-ionxpress_001-to-ionxpress_015.-there-will-be-other-files-in-the-directory-containing-reads-not-mapped-back-to-a-sample-by-forwardreverse-barcode-combination-i.e.-ionxpress_075.-our-new-directory-is-called-2014ion" class="section level4">
+<h4>Create a new folder and move the expected files to that directory (i.e., IonXpress_001 to IonXpress_015). There will be other files in the directory containing reads not mapped back to a sample by forward/reverse barcode combination (i.e., IonXpress_075). Our new directory is called <strong><code>2014ION</code></strong></h4>
+</div>
+<div id="ion-torrent-results-are-not-demultiplexed-so-first-we-created-2-sub-folders-forward-and-reverse-and-put-the-appropriate-ionxpress-fastq-files-into-each-one.-next-we-perform-several-steps-to-prepare-all-the-forward-fastq-files-then-repeat-the-process-with-the-reverse-fastq-files-then-put-all-files-into-1-fasta-before-picking-otus." class="section level4">
+<h4>Ion Torrent results are not demultiplexed so first we created 2 sub-folders, <strong><code>forward</code></strong> and <strong><code>reverse</code></strong>, and put the appropriate IonXpress fastq files into each one. Next, we perform several steps to prepare all the forward FASTQ files, then repeat the process with the reverse FASTQ files, then put all files into 1 FASTA before picking OTUs.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> 2014ION
+
+<span class="kw">mkdir</span> forward
+
+<span class="kw">mkdir</span> reverse
+
+<span class="kw">mv</span> *001* *002* *003* *004* *005* *006* *007* *008* *009* *010*  ./forward
+
+<span class="kw">mv</span> *011* *012* *013* *014* *015*  ./reverse</code></pre></div>
+<p><br></p>
+</div>
+</div>
+<div id="prepare-barcodes-for-each-file" class="section level3">
+<h3><strong>2)</strong> Prepare Barcodes for each File</h3>
+<div id="to-simplify-the-demultiplexing-process-we-moved-the-10-bp-reverse-barcodes-to-the-front-just-after-the-forward-barcode-to-create-a-new-20-bp-unique-barcode-for-each-sequence.-for-example" class="section level4">
+<h4>To simplify the demultiplexing process, we moved the 10 bp reverse barcodes to the front, just after the forward barcode, to create a new 20 bp unique ‘barcode’ for each sequence. For example:</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> forward 
+
+<span class="co">#Note that the 10bp forward barcode changes in each command correspond to each file</span>
+<span class="co">#The command searches the fastq file and moves the last 10bp to just after the forward barcode for each read</span>
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GTTACCTTAG\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_001.fastq <span class="kw">&gt;</span> F01_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GTTCTCCTTA\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_002.fastq <span class="kw">&gt;</span> F02_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GAATCCTCTT\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_003.fastq <span class="kw">&gt;</span> F03_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GATCTTGGTA\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_004.fastq <span class="kw">&gt;</span> F04_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GTTCCTTCTG\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_005.fastq <span class="kw">&gt;</span> F05_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GAACTTGCAG\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_006.fastq <span class="kw">&gt;</span> F06_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GAATCACGAA\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_007.fastq <span class="kw">&gt;</span> F07_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GTTATCGGAA\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_008.fastq <span class="kw">&gt;</span> F08_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GTTCCGCTCA\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_009.fastq <span class="kw">&gt;</span> F09_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GTTCGGTCAG\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_010.fastq <span class="kw">&gt;</span> F10_barcodes.fastq</code></pre></div>
+<p><br></p>
+</div>
+</div>
+<div id="concatenate-forward-fastq-files" class="section level3">
+<h3><strong>3)</strong> Concatenate Forward FASTQ files</h3>
+<div id="all-sequences-still-have-forward-and-reverse-barcodes-attached-in-a-new-unique-20-bp-forward-barcode-so-there-is-no-chance-of-mixing-up-sequences-by-host-sample." class="section level4">
+<h4>All sequences still have forward and reverse barcodes attached, in a new unique 20 bp forward barcode, so there is no chance of mixing up sequences by host sample.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cat</span> *_barcodes.fastq <span class="kw">&gt;</span> forwardseqs.fastq</code></pre></div>
+<p><br></p>
+</div>
+</div>
+<div id="convert-fastq-to-fasta" class="section level3">
+<h3><strong>4)</strong> Convert FASTQ to FASTA</h3>
+<div id="we-need-separate-fasta-and-qual-files-for-demultiplexing-and-quality-filtering-because-downstream-qiime-scripts-require-fasta-format-as-input." class="section level4">
+<h4>We need separate FASTA and QUAL files for demultiplexing and quality filtering because downstream QIIME scripts require FASTA format as input.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">convert_fastaqual_fastq.py</span> -f forwardseqs.fastq -c fastq_to_fastaqual  <span class="co">#took ~25 seconds with test set </span></code></pre></div>
+</div>
+<div id="this-will-created-2-new-files-in-the-forward-directory-forwardseqs.fna-and-forwardseqs.qual.-these-are-the-new-fasta-file-.fna-and-the-associated-quality-file-qual." class="section level4">
+<h4>This will created 2 new files in the <strong><code>forward</code></strong> directory: <strong><code>forwardseqs.fna</code></strong> and <strong><code>forwardseqs.qual</code></strong>. These are the new FASTA file (.fna) and the associated quality file (QUAL).</h4>
+<p><br></p>
+</div>
+</div>
+<div id="validate-mapping-file" class="section level3">
+<h3><strong>5)</strong> Validate Mapping File</h3>
+<div id="we-validate-the-mapping-file-that-tells-qiime-which-which-barcodes-and-primers-belong-to-each-sample-so-that-we-can-maintain-the-path-from-sequences-back-to-host-samples.-make-sure-the-samplemapf.txt-file-is-in-the-forward-directory." class="section level4">
+<h4>We validate the mapping file that tells QIIME which which barcodes and primers belong to each sample so that we can maintain the path from sequences back to host samples. Make sure the <strong><code>SampleMapF.txt</code></strong> file is in the <strong><code>forward</code></strong> directory.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> ..                   <span class="co">#change back to 2014ION dir</span>
+
+<span class="kw">validate_mapping_file.py</span> -m SampleMapF.txt
+
+<span class="kw">head</span> SampleMapF.txt</code></pre></div>
+</div>
+<div id="if-qiime-flags-any-errors-make-changes-as-necessary-help-can-be-found-here-httpqiime.orgscriptsvalidate_mapping_file.html-1" class="section level4">
+<h4>If QIIME flags any errors, make changes as necessary; help can be found here: <a href="http://qiime.org/scripts/validate_mapping_file.html" class="uri">http://qiime.org/scripts/validate_mapping_file.html</a></h4>
+<p><br></p>
+</div>
+<div id="the-mapping-file-should-look-like-this.-notice-the-new-20-bp-barcode-created-in-step-2-and-the-ion-specific-gat-adapter-on-the-reverse-primer" class="section level4">
+<h4>The mapping file should look like this. Notice the new 20 bp barcode created in step <strong>2)</strong> and the Ion-specific <strong>GAT</strong> adapter on the reverse primer:</h4>
+<div class="figure">
+<img src="BatDietWorkflow_files/SampleMapF.jpg" />
+
+</div>
+</div>
+</div>
+<div id="demultiplex-and-quality-filter" class="section level3">
+<h3><strong>6)</strong> Demultiplex and Quality Filter</h3>
+<div id="during-this-step-we-quality-filter-base-calls-less-than-q20-and-sequences-less-than-200-bp-assign-qiime-labels-to-each-sequence-corresponding-to-host-sample-and-then-remove-the-new-20-bp-barcode-and-both-primers.-these-parameters-can-be-changed-with-the--s-min_qual_score-and--l-min_seq_length-options.-we-also-remove-any-sequences-with-a-homopolymer-run-of-10-or-more-bp-there-is-a-natural-8-bp-conserved-region-in-our-target-area.-the-expected-length-at-this-point-is-234-bp." class="section level4">
+<h4>During this step, we quality filter base calls less than Q20 and sequences less than 200 bp, assign QIIME labels to each sequence, corresponding to host sample, and then remove the new 20 bp barcode and both primers. These parameters can be changed with the <strong><code>-s (min_qual_score)</code></strong> and <strong><code>-l (min_seq_length)</code></strong> options. We also remove any sequences with a homopolymer run of 10 or more bp; there is a natural 8 bp conserved region in our target area. The expected length at this point is 234 bp.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">split_libraries.py</span> -m SampleMapF.txt -f ./forward/forwardseqs.fna -q ./forward/forwardseqs.qual -o demultiplexedF -b 20 -H 10 -M 1 -s 20 -z truncate_remove   <span class="co">#took 1 min, 7 sec with test set</span></code></pre></div>
+<div id="this-step-can-take-a-while-to-run-so-one-can-make-sure-qiime-is-not-hung-up-by-occasionally-going-into-the-newly-created-directory-and-right-clicking-on-the-output-file-to-check-file-size-and-make-sure-it-grows-between-checks.-the-process-is-done-when-the-cursor-prompt-returns-to-the-terminal-window.-1" class="section level5">
+<h5><strong>This step can take a while to run, so one can make sure QIIME is not hung up by occasionally going into the newly created directory and right clicking on the output file to check file size and make sure it grows between checks. The process is done when the cursor prompt returns to the terminal window.</strong></h5>
+<p><br></p>
+</div>
+</div>
+</div>
+<div id="repeat-steps-26-for-reverse-fastq-files" class="section level3">
+<h3><strong>7)</strong> Repeat steps 2–6 for Reverse FASTQ files</h3>
+<div id="note-that-a-separate-mapping-file-is-needed-with-primer-sequences-also-reverse-complemented-samplemapr.txt." class="section level5">
+<h5><strong>Note that a separate mapping file is needed with primer sequences also reverse complemented: <code>SampleMapR.txt</code>.</strong></h5>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> ./reverse
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GATTCGAGGA\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_011.fastq <span class="kw">&gt;</span> R11_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GAACCACCTA\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_012.fastq <span class="kw">&gt;</span> R12_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GTCCGTTAGA\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_013.fastq <span class="kw">&gt;</span> R13_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GACACTCCAA\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_014.fastq <span class="kw">&gt;</span> R14_barcodes.fastq
+
+<span class="kw">sed</span> <span class="st">&#39;2~4s/\(.*\)\(.\{10\}\)$/GACCTCTAGA\2\1/;&#39;</span> <span class="kw">&lt;</span> 2015-03-20.IonXpress_015.fastq <span class="kw">&gt;</span> R15_barcodes.fastq
+
+<span class="kw">cat</span> *_barcodes.fastq <span class="kw">&gt;</span> reverseseqs.fastq
+
+<span class="kw">convert_fastaqual_fastq.py</span> -f reverseseqs.fastq -c fastq_to_fastaqual
+<span class="co">#creates 2 new files: reverseseqs.fna and reverseseqs.qual</span>
+<span class="kw">cd</span> ..
+
+<span class="kw">validate_mapping_file.py</span> -m SampleMapR.txt
+
+<span class="kw">split_libraries.py</span> -m SampleMapR.txt -f ./reverse/reverseseqs.fna -q ./reverse/reverseseqs.qual -o demultiplexedR -b 20 -H 10 -M 1 -s 20 -z truncate_remove                 <span class="co">#if you get a high number of mismatches and sequences are discarded, double check that you have the right mapping file</span></code></pre></div>
+</div>
+<div id="this-step-can-take-a-while-to-run-so-one-can-make-sure-qiime-is-not-hung-up-by-occasionally-going-into-the-newly-created-directory-and-right-clicking-on-the-output-file-to-check-file-size-and-make-sure-it-grows-between-checks.-the-process-is-done-when-the-cursor-prompt-returns-to-the-terminal-window.-2" class="section level5">
+<h5><strong>This step can take a while to run, so one can make sure QIIME is not hung up by occasionally going into the newly created directory and right clicking on the output file to check file size and make sure it grows between checks. The process is done when the cursor prompt returns to the terminal window.</strong></h5>
+<p><br></p>
+</div>
+</div>
+<div id="concatenate-forward-and-reverse-to-1-file" class="section level3">
+<h3><strong>8)</strong> Concatenate Forward and Reverse to 1 File</h3>
+<div id="first-we-rename-the-forward-fasta-file-containing-all-the-forward-sequences-now-and-move-it-to-our-main-project-folder.-repeat-for-the-reverse-fasta-file-reverse-complement-and-then-concatenate-all-sequences-into-a-single-file-with-everything-in-the-5-3-orientation." class="section level4">
+<h4>First we rename the forward FASTA file (containing all the forward sequences now) and move it to our main project folder. Repeat for the reverse FASTA file, reverse complement, and then concatenate all sequences into a single file with everything in the 5’ –&gt; 3’ orientation.</h4>
+</div>
+<div id="we-reverse-complement-the-sequences-using-the-fastx-toolkit-which-must-be-installed-in-our-qiime-virtual-box-or-directly-in-macqiime-or-linux-in-the-main-working-directory.-we-used-a-local-copy-of-fastx-toolkit-0.0.12.-reverse-complementing-can-also-be-done-with-the-qiime-adjust_seq_orientation.py-script.-we-used-the-fastx-command-because-we-will-use-another-fastx-tool-later-in-this-section." class="section level4">
+<h4>We reverse complement the sequences using the FASTX Toolkit, which must be installed in our QIIME Virtual Box or directly in Macqiime or Linux in the main working directory. We used a local copy of FASTX Toolkit 0.0.12. Reverse complementing can also be done with the QIIME <strong><code>adjust_seq_orientation.py</code></strong> script. We used the FASTX command because we will use another FASTX tool later in this section.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> demultiplexedF
+
+<span class="kw">mv</span> seqs.fna Fseqs.fna
+
+<span class="kw">mv</span> Fseqs.fna ..
+
+<span class="kw">cd</span> ..
+
+<span class="kw">cd</span> ./demultiplexedR
+
+<span class="kw">mv</span> seqs.fna Rseqs.fna
+
+<span class="kw">mv</span> Rseqs.fna ..
+
+<span class="kw">cd</span> ..
+
+<span class="kw">fastx_reverse_complement</span> -i ./Rseqs.fna  -o ./Rseqs_flipped.fna
+
+<span class="kw">cat</span> Fseqs.fna Rseqs_flipped.fna <span class="kw">&gt;</span> 2014ionseqs.fna</code></pre></div>
+<p><br></p>
+</div>
+</div>
+<div id="assign-similar-sequences-to-otus-1" class="section level3">
+<h3><strong>9)</strong> Assign Similar Sequences to OTUs</h3>
+<div id="next-we-cluster-similar-sequences-using-the-local-alignment-swarm-method-and-allowing-only-a-2-bp-mismatch.-note-that-this-sequence-clustering-is-different-than-clustering-of-amplicons-on-the-flow-cell-during-illumina-sequencing." class="section level4">
+<h4>Next we cluster similar sequences using the local alignment ‘swarm’ method and allowing only a 2 bp mismatch. Note that this sequence clustering is different than clustering of amplicons on the flow cell during Illumina sequencing.</h4>
+<div id="mahe-f-rognes-t-quince-c-de-vargas-c-dunthorn-m.-2014-swarm-robust-and-fast-clustering-method-for-amplicon-based-studies.-peerj-2e593-httpdx.doi.org10.7717peerj.593-1" class="section level6">
+<h6>Mahé F, Rognes T, Quince C, de Vargas C, Dunthorn M. (2014) Swarm: robust and fast clustering method for amplicon-based studies. PeerJ 2:e593 <a href="http://dx.doi.org/10.7717/peerj.593" class="uri">http://dx.doi.org/10.7717/peerj.593</a></h6>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">pick_otus.py</span> -i ./2014ionseqs.fna -m swarm --swarm_resolution 2 -o ./swarmOTUs   <span class="co">#took 1.8 sec with test set</span></code></pre></div>
+</div>
+</div>
+<div id="now-we-have-a-new-directory-with-the-clusters-of-sequences-swarmotus-1" class="section level4">
+<h4>Now we have a new directory with the clusters of sequences: <strong><code>swarmOTUs</code></strong></h4>
+<div id="this-step-can-take-a-while-to-run-and-no-files-are-produced-until-the-process-is-complete.-so-one-can-make-sure-qiime-is-not-hung-up-by-using-the-top-unix-command-in-a-new-terminal-window.-the-pick-otus-qiime-command-should-be-at-the-top-of-the-list-and-using-the-greatest-cpu." class="section level5">
+<h5><strong>This step can take a while to run, and no files are produced until the process is complete. So one can make sure QIIME is not hung up by using the</strong> <strong><code>top</code></strong> <strong>UNIX command in a new terminal window. The pick-otus QIIME command should be at the top of the list and using the greatest %CPU.</strong></h5>
+<p><br></p>
+</div>
+</div>
+</div>
+<div id="build-and-filter-otu-occurrence-table-biom-1" class="section level3">
+<h3><strong>10)</strong> Build and Filter OTU Occurrence Table (BIOM)</h3>
+<div id="we-now-create-our-biom-table-to-keep-track-of-which-otus-were-present-in-each-sample.-we-use-the-swarm-output-file-2014ionseqs_otus.txt-as-input." class="section level4">
+<h4>We now create our BIOM table to keep track of which OTUs were present in each sample. We use the swarm output file <code>2014ionseqs_otus.txt</code> as input.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">make_otu_table.py</span> -i ./swarmOTUs/2014ionseqs_otus.txt -o ./swarmOTUs/seqs.biom</code></pre></div>
+</div>
+<div id="we-filtered-out-low-abundance-otu-clusters-10-copies-in-at-least-1-sample-of-the-entire-data-set-before-writing-data-to-the-table-using-a-script-that-calls-the-pandas-python-package.-we-used-python-2.7.3-that-should-come-as-a-dependency-with-the-qiime-install.-the-provided-pandas_filter10.py-script-has-to-be-in-the-swarmotus-directory." class="section level4">
+<h4>We filtered out low abundance OTU clusters (&lt; 10 copies in at least 1 sample of the entire data set) before writing data to the table using a script that calls the ‘pandas’ python package. We used Python 2.7.3 that should come as a dependency with the QIIME install. The provided ‘pandas_filter10.py’ script has to be in the <strong><code>swarmOTUs</code></strong> directory.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> ./swarmOTUs     <span class="co">#change to the new directory</span>
+
+<span class="kw">cp</span> ../pandas_filter10.py .
+
+<span class="kw">python</span> pandas_filter10.py  <span class="co">#This script will find the seqs.biom file created as output in the last step</span></code></pre></div>
+</div>
+<div id="this-scipt-creates-a-new-file-called-exclude.txt-that-we-can-use-in-the-next-step-to-remove-those-low-abundance-otu-clusters." class="section level4">
+<h4>This scipt creates a new file called <strong><code>exclude.txt</code></strong> that we can use in the next step to remove those low abundance OTU clusters.</h4>
+</div>
+<div id="after-removing-the-unwanted-low-abundance-otu-clusters-we-write-the-desired-otus-to-a-biom-table-in-human-readable-tabular-format.-to-label-the-denovo-otus-we-use-the-pick_rep_set.py-script-to-pick-one-representative-sequence-from-each-cluster.-then-we-pull-those-desired-representative-sequences-from-our-original-.fna-file-and-write-a-new-.fna.-from-here-on-out-we-use-the-representative-sequences-from-each-otu-cluster-to-reduce-processing-demand.-1" class="section level4">
+<h4>After removing the unwanted low abundance OTU clusters, we write the desired OTUs to a BIOM table in human-readable tabular format. To label the denovo OTUs, we use the <strong><code>pick_rep_set.py</code></strong> script to pick one representative sequence from each cluster. Then we pull those desired representative sequences from our original .fna file and write a new .fna. From here on out, we use the representative sequences from each OTU cluster to reduce processing demand.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">
+<span class="kw">cd</span> ..     <span class="co">#change back to the main working directory</span>
+
+<span class="kw">filter_otus_from_otu_table.py</span> -i ./swarmOTUs/seqs.biom -o ./swarmOTUs/otu_table_no_singletons.biom -e ./swarmOTUs/exclude.txt
+
+<span class="kw">biom</span> convert -i ./swarmOTUs/otu_table_no_singletons.biom -o ./swarmOTUs/2014ion_biom_no_singletons.txt --table-type=<span class="st">&quot;OTU table&quot;</span> --to-tsv
+
+<span class="kw">pick_rep_set.py</span> -i ./swarmOTUs/2014ionseqs_otus.txt -f ./2014ionseqs.fna -m most_abundant -o ./2014ion_final.fna -l ./2014ion_final_log
+
+<span class="kw">filter_fasta.py</span> -f ./2014ion_final.fna -b ./swarmOTUs/otu_table_no_singletons.biom -o ./2014ion_final_no_singletons.fna</code></pre></div>
+</div>
+<div id="the-last-command-in-unix-will-convert-our-final-fasta-file-to-a-tab-delimited-file-we-can-use-to-assign-taxonomy-in-the-bold-database.-this-file-will-be-useful-when-resolving-taxonomic-discrepancies-in-the-last-section-manual-vetting.-the-fasta_formatter-command-is-part-of-the-fastx-toolkit.-we-run-the-command-and-then-manually-add-column-headers-to-the-text-file-called-seqid-and-seqs." class="section level4">
+<h4>The last command in UNIX will convert our final FASTA file to a tab-delimited file we can use to assign taxonomy in the BOLD database. This file will be useful when resolving taxonomic discrepancies in the last section: <a href="#Manual%20Vetting">Manual Vetting</a>. The <strong><code>fasta_formatter</code></strong> command is part of the FASTX Toolkit. We run the command and then manually add column headers to the text file called: <strong>seqID</strong> and <strong>seqs</strong>.</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">fasta_formatter</span> -i ./2014ion_final_no_singletons.fna -o ./2014iontabseqs.txt -t</code></pre></div>
+<p><br></p>
+</div>
+</div>
+</div>
+<div id="assign-taxonomy-and-filter-results-run-commands-in-r" class="section level1">
+<h1><a id="Assign Taxonomy"></a>Assign Taxonomy and Filter Results – <strong><em>Run commands in R</em></strong></h1>
+<div id="after-transferring-the-2014tabseqs.txt-and-the-2014_biom_no_singletons.txt-files-to-a-working-directory-outside-of-the-qiime-system-we-used-several-r-packages-to-assign-taxonomy-and-filter-out-unwanted-returns-such-as-low-similarity-matches-and-those-outside-a-reasonable-geographic-area." class="section level4">
+<h4>After transferring the <strong><code>2014tabseqs.txt</code></strong> and the <strong><code>2014_biom_no_singletons.txt</code></strong> files to a working directory outside of the QIIME system, we used several R packages to assign taxonomy and filter out unwanted returns, such as low similarity matches and those outside a reasonable geographic area.</h4>
+</div>
+<div id="the-following-sections-use-the-output-files-from-the-illumina-miseq-section-above.-if-you-only-have-output-from-the-ion-torrent-section-use-2014iontabseqs.txt-and-2014_ion_biom_no_singletons.txt" class="section level4">
+<h4>The following sections use the output files from the <a href="#Illumina%20MiSeq">Illumina Miseq</a> section above. If you only have output from the <a href="#Ion%20Torrent">Ion Torrent</a> section, use <strong><code>2014iontabseqs.txt</code></strong> and <strong><code>2014_ion_biom_no_singletons.txt</code></strong></h4>
+<p><br></p>
+</div>
+<div id="rstudio-and-r-notebooks" class="section level3">
+<h3><strong>1)</strong> RStudio and R Notebooks</h3>
+<div id="to-edit-source-code-or-to-run-each-step-and-follow-the-tutorial-the-easiest-method-is-to-open-the-provided-.rmd-r-markdown-file-in-rstudio-httpswww.rstudio.comproductsrstudiodownload." class="section level4">
+<h4>To edit source code or to run each step and follow the tutorial, the easiest method is to open the provided .Rmd (R Markdown) file in RStudio: <a href="https://www.rstudio.com/products/rstudio/download/" class="uri">https://www.rstudio.com/products/rstudio/download/</a>.</h4>
+</div>
+<div id="we-used-rstudio-version-1.0.136-2009-2016-rstudio-inc.-program-r-must-first-be-installed-on-the-same-machine-httpswww.r-project.org.-we-used-r-version-3.3.2-2016-10-31-sincere-pumpkin-patch.-all-remaining-data-processing-steps-in-this-section-should-be-run-in-rstudio." class="section level4">
+<h4>We used RStudio Version 1.0.136 – © 2009-2016 RStudio, Inc. Program R must first be installed on the same machine: <a href="https://www.r-project.org/" class="uri">https://www.r-project.org/</a>. We used R version 3.3.2 (2016-10-31) – “Sincere Pumpkin Patch”. All remaining data processing steps in this section should be run in RStudio.</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install.packages</span>(<span class="st">&#39;rmarkdown&#39;</span>)
+<span class="kw">library</span> (<span class="st">&#39;rmarkdown&#39;</span>)</code></pre></div>
+<p><br></p>
+</div>
+</div>
+<div id="set-working-directory-and-read-in-data" class="section level3">
+<h3><strong>2)</strong> Set Working Directory and Read in Data</h3>
+<div id="change-directory-path-as-needed." class="section level4">
+<h4>Change directory path as needed.</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">setwd</span>(<span class="st">&quot;C:</span><span class="ch">\\</span><span class="st">Users</span><span class="ch">\\</span><span class="st">Owner</span><span class="ch">\\</span><span class="st">Google Drive</span><span class="ch">\\</span><span class="st">IONvsMISEQ&quot;</span>)
+
+mydata &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="st">&quot;2014tabseqs.txt&quot;</span>, <span class="dt">header =</span> <span class="ot">TRUE</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">dec =</span> <span class="st">&quot;.&quot;</span>, <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>)
+
+<span class="kw">head</span>(mydata)</code></pre></div>
+<pre><code>##          denovo0.A4900.S9.L001_R1_001_0
+## 1  denovo1 A4593.S13.L001_R1_001_116544
+## 2    denovo10 A4900.S9.L001_R1_001_3230
+## 3     denovo11 A4900.S9.L001_R1_001_483
+## 4 denovo12 A4593.S13.L001_R1_001_117167
+## 5 denovo13 A4593.S13.L001_R1_001_116755
+## 6    denovo14 A4900.S9.L001_R1_001_2085
+##    AGATATTGGAACTTTATATTTTATTTTTGGAATTTGAGCAGGAATAGTAGGAACATCTTTAAGACTTTTAATTCGAGCTGAATTAGGTAATCCAGGATCTCTAATTGGAGATGACCAAATTTATAATACCATTGTAACAGCTCATGCTTTTATTATAATTTTTTTCATAGTTATACCTATTATAATTGGAGGATTTGGAAATTGATTAGTA
+## 1  AGATATTGGAACTTTATATTTTATTTTTGGTATTTGATCTGGTATAGTAGGAACTTCATTAAGATTATTAATTCGGGCAGAATTAGGAAATCCTGGATCATTAATTGGTGATGACCAAATTTATAATACTATTGTTACAGCCCATGCTTTTATTATAATTTTTTTTATGGTAATACCCATTATAATTGGAGGATTTGGAAATTGATTAGTA
+## 2  AGATATTGGAACTTTATATTTTATTTTTGGGGCATGATCAGGTATAATTGGTACATCTATAAGATTAATAATTCGTACTGAATTAGGAAATTATGGATCTTTAATTGGTGATGATCAAATTTATAATGTTATTGTTACAGCCCATGCTTTTATTATAATTTTCTTTATAGTTATACCTATTATAATTGGAGGATTTGGTAATTGATTAGTA
+## 3  AGATATTGGAACTTTATATTTTATTTTTGGAGCTTGGGCAGGAATGGTTGGAACTTCGTTGAGAATTTTAATTCGGGCAGAACTTGGACATCCAGGGGCATTAATTGGTGATGATCAAATTTATAACGTAATTGTAACAGCTCATGCTTTTATCATAATTTTCTTTATAGTAATACCTATTATAATTGGAGGATTTGGAAATTGATTAGTA
+## 4  AGATATTGGAACTTTATATTTTATTTTTGGGGCTTGGGCAGGAATAGTTGGAACTTCATTAAGAATTTTAATTCGAGCAGAACTTGGTCATCCGGGGGCACTAATTGGTGATGATCAAATTTATAATGTTATTGTAACAGCTCATGCATTTATTATAATTTTTTTTATAGTAATACCCATTATAATTGGAGGATTTGGAAATTGATTAGTA
+## 5  AGATATTGGAACTTTATATTTTATTTTTGGTGCATGATCAGGTATAGTAGGAACATCTTTAAGTATACTAATTCGAGCTGAATTAAATCAACCAGGATCTTTAATTGGAGATGATCAAATCTATAATGTAATTGTAACAGCCCATGCATTTATTATAATTTTTTTCATAGTTATACCAATTTTAATTGGAGGATTTGGAAATTGATTAGTA
+## 6 AGATATTGGAACTTTATATTTTATTTTTGGAGCATGATCAGGTGTAATTGGTACATCTATAAGATTAATAATTCGTACTGAATTAGGAAATTCTGGGCCTTTAATTGGTGATGACCAAAATTTATAATGTTATTGTTACAGCCCATGCTTTTATTATATTTTTCTAGAGTTATATACCTATTATAATTGGAGGATTTGGAAATTGATTAGTA</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mydata2 &lt;-<span class="st"> </span><span class="kw">as.list</span>(<span class="kw">setNames</span>(mydata$seqs, mydata$seqID))  <span class="co">#make sure headers are not capitalized</span></code></pre></div>
+<p><br></p>
+</div>
+</div>
+<div id="query-bold-for-otu-matches" class="section level3">
+<h3><strong>3)</strong> Query BOLD for OTU Matches</h3>
+<div id="use-the-bold_identify-function-to-get-sequences-from-the-bold-api.-this-will-return-all-the-matches-in-bold-which-should-also-include-sequences-mined-from-genbank-httpswww.ncbi.nlm.nih.govgenbank." class="section level4">
+<h4>Use the <strong><code>bold_identify</code></strong> function to get sequences from the BOLD API. This will return all the matches in BOLD, which should also include sequences mined from GenBank (<a href="https://www.ncbi.nlm.nih.gov/genbank/" class="uri">https://www.ncbi.nlm.nih.gov/genbank/</a>).</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install.packages</span>(<span class="st">&#39;bold&#39;</span>)
+
+<span class="kw">library</span>(<span class="st">&#39;bold&#39;</span>)
+
+output &lt;-<span class="st"> </span><span class="kw">bold_identify</span>(<span class="dt">sequences =</span> mydata2, <span class="dt">db =</span> <span class="st">&quot;COX1&quot;</span>, <span class="dt">response=</span><span class="ot">FALSE</span>) <span class="co">#This can take several hours to run</span></code></pre></div>
+<p><br></p>
+</div>
+</div>
+<div id="trim-output-by-user-specific-number-of-matches" class="section level3">
+<h3><strong>4)</strong> Trim Output by User-specific Number of Matches</h3>
+<div id="we-trimmed-our-output-to-the-top-40-matches-for-each-otu-this-number-can-vary-depending-on-project-objectives.-in-many-cases-there-will-be-up-to-100-matches-for-each-otu.-results-mined-from-genbank-are-only-returned-at-the-order-level-and-require-further-investigation-in-the-manual-vetting-of-results-section.-for-our-data-trimming-to-the-40-top-matches-left-enough-sequences-to-resolve-discrepancies-while-also-removing-extranneous-results-ultimately-making-it-easier-to-parse-through-each-otu-and-assign-taxonomy." class="section level4">
+<h4>We trimmed our output to the top 40 matches for each OTU; this number can vary depending on project objectives. In many cases there will be up to 100 matches for each OTU. Results mined from GenBank are only returned at the Order level and require further investigation in the [Manual Vetting of Results] section. For our data, trimming to the 40 top matches left enough sequences to resolve discrepancies while also removing extranneous results, ultimately making it easier to parse through each OTU and assign taxonomy.</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">outtax40 &lt;-<span class="st"> </span><span class="kw">lapply</span>(output, head, <span class="dt">n=</span><span class="dv">40</span>)
+
+outtaxframe &lt;-<span class="st"> </span><span class="kw">do.call</span>(<span class="st">&quot;rbind&quot;</span>, <span class="kw">lapply</span>(outtax40, data.frame))</code></pre></div>
+</div>
+<div id="the-outtaxframe-returns-the-top-40-matches-by-similarity-from-the-bold-results." class="section level4">
+<h4>The <strong><code>outtaxframe</code></strong> returns the top 40 matches, by similarity, from the BOLD results.</h4>
+<p><br></p>
+</div>
+</div>
+<div id="filter-out-seqs-98-and-unlikely-by-geography" class="section level3">
+<h3><strong>5)</strong> Filter out Seqs &lt; 98% and Unlikely by Geography</h3>
+<div id="this-step-not-only-filters-out-low-percent-similarity-matches-but-also-helps-with-discrepancy-resolution-when-several-specimens-from-bold-match-one-otu-at-the-same-similarity." class="section level4">
+<h4>This step not only filters out low percent similarity matches, but also helps with discrepancy resolution when several specimens from BOLD match one OTU at the same similarity.</h4>
+</div>
+<div id="we-only-kept-matches-that-were-98.4-but-other-studies-have-used-lower-similarities.-without-this-filtering-step-it-takes-much-longer-to-assign-taxonomy-with-manual-vetting-of-matches-by-geographic-area.-for-example-even-at-98.4-similarity-it-is-possible-for-one-otu-to-match-a-moth-specimen-from-the-usa-and-a-butterfly-from-papua-new-guinea." class="section level4">
+<h4>We only kept matches that were &gt; 98.4% but other studies have used lower % similarities. Without this filtering step it takes much longer to assign taxonomy with manual vetting of matches by geographic area. For example, even at &gt; 98.4% similarity, it is possible for one OTU to match a moth specimen from the USA <strong>and</strong> a butterfly from Papua New Guinea.</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#We used a custom header style for the final xlsx file</span>
+
+<span class="kw">install.packages</span>(<span class="st">&#39;openxlsx&#39;</span>)
+
+<span class="kw">library</span>(<span class="st">&#39;openxlsx&#39;</span>)     <span class="co">#Must have Rtools installed and check box to edit PATH or afterwards do: Sys.setenv(&quot;R_ZIPCMD&quot; = &quot;C:/Rtools/bin/zip.exe&quot;) ##path to zip.exe</span>
+
+HS &lt;-<span class="st"> </span><span class="kw">createStyle</span>(<span class="dt">fontSize=</span><span class="dv">13</span>, <span class="dt">fontColour=</span><span class="st">&#39;navy&#39;</span>, <span class="dt">numFmt=</span><span class="st">&#39;GENERAL&#39;</span>, <span class="dt">halign=</span><span class="st">&#39;center&#39;</span>, <span class="dt">valign=</span><span class="st">&#39;center&#39;</span>, <span class="dt">textDecoration=</span><span class="st">&#39;bold&#39;</span>, <span class="dt">wrapText=</span><span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install.packages</span>(<span class="st">&#39;dplyr&#39;</span>)
+
+<span class="kw">library</span>(<span class="st">&#39;dplyr&#39;</span>)
+<span class="kw">library</span>(<span class="st">&#39;tibble&#39;</span>)
+
+outtaxframe %&lt;&gt;%<span class="st">     </span><span class="co">#This only keeps rows that we want and updates the dataframe</span>
+<span class="st">    </span><span class="kw">rownames_to_column</span>(<span class="st">&quot;seqID&quot;</span>) %&gt;%<span class="st">     </span>
+<span class="st">    </span><span class="kw">filter</span>(specimen_country %in%<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;United States&quot;</span>, <span class="st">&quot;Canada&quot;</span>), similarity &gt;=<span class="st"> </span><span class="fl">0.98</span>)
+
+<span class="kw">write.xlsx</span>(outtaxframe, <span class="dt">file=</span><span class="st">&#39;2014outtaxframe40.xlsx&#39;</span>, <span class="dt">asTable=</span><span class="ot">FALSE</span>, <span class="dt">colNames=</span><span class="ot">TRUE</span>, <span class="dt">rowNames=</span><span class="ot">TRUE</span>, <span class="dt">headerStyle=</span>HS)
+
+     <span class="co">#Might get an error if Rtools is not installed - follow error message suggestions to get Rtools</span></code></pre></div>
+</div>
+<div id="the-final-filtered-file-should-look-like-this-with-up-to-40-records-for-each-denovo-otu" class="section level4">
+<h4>The final filtered file should look like this, with up to 40 records for each denovo OTU:</h4>
+<div class="table">
+
+<table class="kable_wrapper">
+<tbody>
+<tr>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+</div>
+</div>
+</div>
+<div id="manual-vetting-of-results-work-in-a-web-browser" class="section level1">
+<h1><a id="Manual Vetting"></a>Manual Vetting of Results – <strong><em>Work in a Web Browser</em></strong></h1>
+<div id="the-3-files-of-interest-for-assigning-final-taxonomy-are-2014outtaxframe40.xlsx-2014tabseqs.txt-and-2014final_no_singletons.txt." class="section level4">
+<h4>The 3 files of interest for assigning final taxonomy are: <strong><code>2014outtaxframe40.xlsx</code></strong>, <strong><code>2014tabseqs.txt</code></strong>, and <strong><code>2014final_no_singletons.txt</code></strong>.</h4>
+</div>
+<div id="first-we-open-the-2014biom_no_singletons.txt-file-and-convert-any-within-sample-occurrences-10-to-0-to-remove-low-abundance-otu-occurrences-with-simple-find-and-replace-commands-in-ms-excel.-this-step-is-to-remove-potential-sequencing-errors-the-threshold-of-10-is-arbitrary-and-can-be-changed-depending-on-project-objectives." class="section level4">
+<h4>First, we open the <strong><code>2014biom_no_singletons.txt</code></strong> file and convert any within-sample occurrences &lt; 10 to 0 to remove low abundance OTU occurrences with simple find and replace commands in MS Excel. This step is to remove potential sequencing errors; the threshold of 10 is arbitrary and can be changed depending on project objectives.</h4>
+</div>
+<div id="next-we-open-2014outtaxframe40.xlsx-and-and-look-for-any-discrepancies-at-the-same-similarity-in-our-output-from-bold_identify-and-then-assign-taxonomy-in-new-columns-in-the-2014final_no_singletons.txt-file." class="section level4">
+<h4>Next, we open <strong><code>2014outtaxframe40.xlsx</code></strong> and , and look for any discrepancies at the same similarity in our output from <strong><code>bold_identify</code></strong>, and then assign taxonomy in new columns in the <strong><code>2014final_no_singletons.txt</code></strong> file.</h4>
+</div>
+<div id="updating-the-biom-table-with-taxonomy" class="section level3">
+<h3><em>Updating the BIOM table with Taxonomy</em></h3>
+<div class="figure">
+<img src="BatDietWorkflow_files/firstLook.png" />
+
+</div>
+<p><br></p>
+<div id="sometimes-there-are-discrepancies-in-the-results-returned-from-bold_identify-that-we-need-to-manually-investigate." class="section level4">
+<h4>Sometimes there are discrepancies in the results returned from <strong><code>bold_identify</code></strong> that we need to manually investigate.</h4>
+</div>
+<div id="in-this-example-results-for-otu-denovo118-match-6-different-species-in-the-same-genus-at-100.-we-know-that-all-of-these-matching-specimen-records-could-occur-within-our-region-because-we-filtered-the-2014outtaxframe40.xlsx-based-on-similarity-and-geography.-nonetheless-we-chose-a-simple-example-to-demonstrate-the-process-of-how-we-learned-to-convert-results-into-assigned-taxonomy." class="section level4">
+<h4>In this example, results for OTU denovo118 match 6 different species in the same genus at 100%. We know that all of these matching specimen records could occur within our region because we filtered the <strong><code>2014outtaxframe40.xlsx</code></strong> based on similarity <em>and</em> geography. Nonetheless, we chose a simple example to demonstrate the process of how we learned to convert results into assigned taxonomy.</h4>
+</div>
+</div>
+<div id="discrepancy-example" class="section level3">
+<h3><em>Discrepancy Example</em></h3>
+<div class="figure">
+<img src="BatDietWorkflow_files/discrepancyex.jpg" />
+
+</div>
+<p><br></p>
+<div id="next-we-go-to-our-2014tabseqs.txt-file-to-find-the-sequence-for-denovo118" class="section level4">
+<h4>Next, we go to our <strong><code>2014tabseqs.txt</code></strong> file to find the sequence for denovo118</h4>
+</div>
+</div>
+<div id="find-the-sequence-in-question" class="section level3">
+<h3><em>Find the Sequence in Question</em></h3>
+<div class="figure">
+<img src="BatDietWorkflow_files/findtheseq.jpg" />
+
+</div>
+<p><br></p>
+<div id="we-cut-and-paste-the-sequence-into-the-bold-identification-browser-in-fasta-format-httpwww.boldsystems.orgindex.phpids_openidengine" class="section level4">
+<h4>We cut and paste the sequence into the BOLD Identification browser in FASTA format (<a href="http://www.boldsystems.org/index.php/IDS_OpenIdEngine" class="uri">http://www.boldsystems.org/index.php/IDS_OpenIdEngine</a>)</h4>
+</div>
+</div>
+<div id="paste-sequence-into-bold" class="section level3">
+<h3><em>Paste Sequence into BOLD</em></h3>
+<div class="figure">
+<img src="BatDietWorkflow_files/pasteSeq.jpg" />
+
+</div>
+<p><br></p>
+<div id="we-get-many-matches-at-100-including-some-out-of-our-area.-there-are-several-catocala-spp.-as-expected.-we-dont-expect-any-nymphalidae-butterflies-in-bat-feces-so-we-disregard-those.-that-leaves-piletocera-sodalis-as-another-potential-prey." class="section level4">
+<h4>We get many matches at 100%, including some out of our area. There are several <em>Catocala spp.</em>, as expected. We don’t expect any Nymphalidae butterflies in bat feces so we disregard those. That leaves <em>Piletocera sodalis</em> as another potential prey.</h4>
+</div>
+</div>
+<div id="re-examine-the-matches" class="section level3">
+<h3><em>Re-examine the Matches</em></h3>
+<div class="figure">
+<img src="BatDietWorkflow_files/idRequest.jpg" />
+
+</div>
+<p><br></p>
+<div id="when-we-investigate-piletocera-sodalis-in-the-bold-taxonomy-browser-we-learn-that-it-is-only-found-in-japan-china-and-korea-so-we-disregard-that-potential-prey.-because-we-still-have-6-catocala-spp.-possible-we-can-only-assign-taxonomy-to-otu-denovo118-as-catocala-spp." class="section level4">
+<h4>When we investigate <em>Piletocera sodalis</em> in the BOLD Taxonomy browser, we learn that it is only found in Japan, China, and Korea, so we disregard that potential prey. Because we still have 6 <em>Catocala spp.</em> possible, we can only assign taxonomy to OTU denovo118 as <em>Catocala spp.</em></h4>
+</div>
+</div>
+<div id="cross-reference-with-expectations" class="section level3">
+<h3><em>Cross-reference with Expectations</em></h3>
+<div class="figure">
+<img src="BatDietWorkflow_files/mothOutofArea.jpg" />
+
+</div>
+</div>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
