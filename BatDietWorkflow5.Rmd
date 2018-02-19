@@ -1,0 +1,599 @@
+---
+title: "Bat Diet via DNA Metabarcoding -- Illumina MiSeq and Ion Torrent PGM"
+author: "Timothy J Divoll"
+date: "27 February, 2017"
+output:
+  html_document:
+    css: ~/R/win-library/3.4/markdown/resources/kable.css
+    highlight: haddock
+    keep_md: yes
+    theme: cosmo
+    toc: yes
+  html_notebook:
+    css: ~/R/win-library/3.4/markdown/resources/kable.css
+    highlight: haddock
+    self_contained: yes
+    theme: cosmo
+    toc: yes
+  pdf_document:
+    highlight: tango
+    keep_tex: yes
+    toc: yes
+    toc_depth: 4
+  word_document:
+    toc: yes
+subtitle: "Supporting Data Workflow for manuscript MEN12770 in Molecular Ecology Resources, published on 17 February 2018 -- Disparities in second-generation DNA          metabarcoding results exposed with accessible and repeatable workflows. Article DOI: 10.1111/1755-0998.12770"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, eval=FALSE, message=FALSE)
+``` 
+<br>
+
+#<a id="Install"></a>Install and Setup
+
+####This tutorial provides guidance on how to transform raw Ion Torrent **or** Illumina MiSeq amplicon data into OTUs for taxonomic assignment. The workflow includes UNIX commands to call QIIME (http://qiime.org/) and FASTX Toolkit (http://hannonlab.cshl.edu/fastx_toolkit/download.html) scripts to quality filter and cluster sequences before using Python scripts and R packages to filter and clean data for taxonomic assignment.
+
+####We recommend first running through the entire process outlined in this document with the provided test data sets to make sure all software is installed properly under reduced processing loads (i.e., only a couple samples). Materials are available here: https://github.com/tdivoll/Bat-Diet-Metabarcoding
+
+####The first section must be performed in UNIX (http://opengroup.org/unix), Macqiime (http://www.wernerlab.org/software/macqiime), or through a Virtual Machine running UNIX, as outlined here: (http://qiime.org/install/virtual_box.html). We used the recommended QIIME Virtual Box install on a Windows machine with 16GB RAM and Oracle Virtual Box Version 5.0.8 r103449 (https://www.virtualbox.org/wiki/Downloads). 
+
+####In the QIIME VB System Settings, we changed default settings to allow 4 cores and 11 GB of virtual memory.
+
+###*Virtual Box Settings*
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\VBMain.jpg) 
+
+<br>
+
+###*Virtual Box Processor Cores*
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\VBCores.jpg) 
+
+<br>
+
+###*Virtual Box Memory*
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\VBMem.jpg) 
+
+<br>
+
+#<a id="Illumina MiSeq"></a>Illumina MiSeq Workflow -- ___Run commands in UNIX___ 
+
+<br>
+
+#### If you only have IonTorrent data, skip the [Illumina MiSeq] section and go to the [Ion Torrent](#Ion Torrent) section.
+<br>
+
+####All commands in this section were run inside the QIIME Virtual Box created above in the [Install](#Install) section. Open the QIIME machine and start a new Terminal window. It should provide a command line prompt similar to this: qiime@qiime-190-virtual-box:
+
+<br>
+
+####If you will be using a similar workflow more than once, it helps to use the **`time`** UNIX command in front of other commands. This command returns the processing time, in minutes and seconds, which simply helps plan future data analyses. For example:
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\timeEx.jpg)
+
+<br>
+
+
+### **1)** Organize R1 and R2 Files
+####First load all compressed R1 and R2 *.fastq.gz* paired files into a new folder, such as: **`2014MISEQ`**
+
+####Drag and drop from Windows to Virtual Box or use **`mv`** if working directly in UNIX or Macqiime 
+<br>
+```{r, engine="bash", echo=TRUE}
+mkdir 2014MISEQ   
+```
+
+#### QIIME will not accept underscores or hyphens in Sample IDs used in the QIIME process, thus, you may have to rename folder names so there are no underscores before L001; change underscores and hyphens to periods, except after L001. Everything before L001 will become the Sample ID. An example of bash code to do this follows:
+```{r, fixfilenames.sh, engine="bash", echo=TRUE}
+#!/bin/bash   #save this as a script called fixfilenames.sh and save in your Project folder
+cd $1;
+for file in *L001*; do
+  fp = "${file%L001*}";
+  lp = "${file#*L001}";
+  new = "${fp//_/.}L001$lp";
+  mv "$file" "$new";
+done
+```
+#### Now change permissions and run the script.
+```{r, engine="bash", echo=TRUE}
+cd 2014MISEQ
+
+chmod u+x fixfilenames.sh
+
+./fixfilenames.sh
+```
+
+<br>
+
+### **2)** Join Paired Ends
+####Next, we join corresponding paired reads **_(R1 and R2)_** for each sample to increase read quality and propagate that quality on through to taxonomic assignment. This command will accept zipped files so there is no need to extract first.
+
+````{r, engine="bash", echo=TRUE}
+multiple_join_paired_ends.py -i /home/qiime/2014MISEQ -o /home/qiime/2014MISEQ/joined_seqs
+#took 10 secs with test set
+````
+
+#### We output the joined sequence files, 1 per bat sample, into a new directory called: **`joined_seqs`**
+
+####Now we take out the **unjoined sequences** so they do not get mixed up in downstream analyses. You may prefer to save these somewhere if they could be useful to your particular application.
+
+```{r, engine="bash", echo=TRUE}
+cd joined_seqs     #change directory to the newly created joined_seqs directory
+
+find . -name "*.un1.fastq" -type f -delete     #do this exactly as written to avoid deleting other files
+
+find . -name "*.un2.fastq" -type f -delete
+```
+<br>
+
+### **3)** Quality Filter and Assign Sample IDs to Sequences
+####Illumina MiSeq platform trims Nextera indices and adaptors prior to writing sequence data to BaseSpace. However, we still use QIIME's split_libraries script to assign Sample IDs to each individual sequence using folder names and concatenate all joined sequences into one file for downstream analyses.
+
+####Default quality filtering parameters are applied here so that base calls less than Q25 and sequences less than 200 bp are removed. These paramters can be changed with the **`-s (min_qual_score)`** and **`-l (min_seq_length)`** options. Our expected length at this step is 211 bp.
+
+
+```{r, engine="bash", echo=TRUE}
+cd ..     #change directory back to the main working directory
+
+multiple_split_libraries_fastq.py -i /home/qiime/2014MISEQ/joined_seqs -o /home/qiime/2014MISEQ/split_out --demultiplexing_method sampleid_by_file --include_input_dir_path --remove_filepath_in_name  #took 16 secs with test set
+```
+#### We output the resulting FASTA file (QIIME uses the file extension .fna) and log files into a new directory called: **`split_out`**
+
+#####**This step can take a while to run, so one can make sure QIIME is not hung up by occasionally going into the newly created directory and right clicking on the output file to check file size and make sure it grows between checks. The process is done when the cursor prompt returns to the terminal window.**
+<br>
+
+### **4)** Trim Primers
+#### Now we need to remove Zeale primers from the 5' **and** 3' ends of each sequence. It is easiest to remove the reverse primer first from the 3' end, then reverse complement the sequences, remove the forward primer which is now in a reverse orientation on the 3' end, then reverse complement the sequences again so they are back in the 5' --> 3' direction with both primers removed.
+
+####First we validate the mapping file which tells QIIME what the primer sequences should be. 
+#### If QIIME flags any errors, make changes as necessary; help can be found here: http://qiime.org/scripts/validate_mapping_file.html
+<br>
+
+```{r, engine="bash", echo=TRUE}
+validate_mapping_file.py -m SampleMapFile.txt  #good practice to make sure all columns are in correct format
+
+truncate_reverse_primer.py -f ./split_out/seqs.fna -m ./SampleMapFile.txt -z truncate_remove -M 1 -o ./Rtruncated
+```
+
+#### The .fna file is our sequence file, and the SampleMapFile.txt is the mapping file with forward and reverse primer sequence info. In this case, we allow 1 mismatch in the primer sequence. The mapping file must have unique barcodes for each sample. Becasue the barcodes are already removed by Illumina, we simply concatenated forward and reverse indexes used in the sequencing process so each sample has a unique 'barcode' to satisfy the `validate_mapping_file.py`:
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\MapEx.jpg)
+
+####We reverse complement the sequences using the FASTX Toolkit, which must be installed in our QIIME Virtual Box or directly in Macqiime or Linux in the main working directory, then again remove reverse primers, and flip sequences back. We used a local copy of FASTX Toolkit 0.0.12. Reverse complementing can also be done with the QIIME **`adjust_seq_orientation.py`** script. We used the FASTX command because we will use another FASTX tool later in this section.
+<br>
+
+#####**Note that a separate mapping file is needed with primer sequences also reverse complemented: `SampleMapFile_reverse.txt`.**
+
+```{r, engine="bash", echo=TRUE}
+fastx_reverse_complement -i ./Rtruncated/seqs_rev_primer_truncated.fna -o ./Rcomp
+
+truncate_reverse_primer.py -f ./Rcomp -m ./SampleMapFile_reverse.txt -z truncate_remove -M 1 -o ./Rcomp_forward_removed
+
+fastx_reverse_complement -i ./Rcomp_forward_removed/Rcomp_rev_primer_truncated.fna -o ./trimmed_seqs.fna
+```
+#### We now have a file called **`trimmed_seqs.fna`** with all primers removed.
+<br>
+
+### **5)** Assign Similar Sequences to OTUs
+####Next we cluster similar sequences using the local alignmnet 'swarm' method and allowing only a 2 bp mismatch. Note that this sequence clustering is different than clustering of amplicons on the flow cell during Illumina sequencing.
+
+######Mahé F, Rognes T, Quince C, de Vargas C, Dunthorn M. (2014) Swarm: robust and fast clustering method for amplicon-based studies. PeerJ 2:e593 <http://dx.doi.org/10.7717/peerj.593>
+
+```{r, engine="bash", echo=TRUE}
+pick_otus.py -i ./trimmed_seqs.fna -m swarm --swarm_resolution 2 -o ./swarmOTUs    #took 18 sec with test set
+```
+#### Now we have a new directory with the clusters of sequences: **`swarmOTUs`**
+
+#####**This step can take a while to run, and no files are produced until the process is complete. One can make sure QIIME is not hung up by using the** **`top`** **UNIX command in a new terminal window. The pick-otus QIIME command should normally be at the top of the list and using the greatest %CPU.**
+
+<br>
+
+### **6)** Build and Filter OTU Occurrence Table (BIOM)
+####We now create our BIOM table to keep track of which OTUs were present in each sample. We use the new swarm output file **`trimmed_seqs_otus.txt`** as input.
+```{r, engine="bash", echo=TRUE}
+make_otu_table.py -i ./swarmOTUs/trimmed_seqs_otus.txt -o ./swarmOTUs/seqs.biom
+```
+
+We filter out low abundance OTU clusters (< 10 copies in at least 1 sample of the entire data set) before writing data to the table using a script that calls the 'pandas' python package. We used Python 2.7.3 that should come as a dependency with the QIIME install. The provided 'pandas_filter10.py' script has to be in the **`swarmOTUs`** directory.  
+
+```{r, engine="bash", echo=TRUE}
+cd ./swarmOTUs     #change to the new directory
+
+cp ../pandas_filter10.py .
+
+python pandas_filter10.py     #This script will find the seqs.biom file created as output in the last step
+```
+####This script creates a new file called **`exclude.txt`** that we can use in the next step to remove those low abundance OTU clusters.  
+
+####After removing the unwanted low abundance OTU clusters, we write the desired OTUs to a BIOM table in human-readable tabular format. To label the denovo OTUs, we use the **`pick_rep_set.py`** script to pick one representative sequence from each cluster. Then we pull those desired representative sequences from our original .fna file and write a new .fna. From here on out, we use the representative sequences from each OTU cluster to reduce processing demand.
+
+```{r, engine="bash", echo=TRUE}
+cd ..     #change back to the main working directory
+
+filter_otus_from_otu_table.py -i ./swarmOTUs/seqs.biom -o ./swarmOTUs/otu_table_no_singletons.biom -e ./swarmOTUs/exclude.txt
+
+biom convert -i ./swarmOTUs/otu_table_no_singletons.biom -o ./swarmOTUs/2014_biom_no_singletons.txt --table-type="OTU table" --to-tsv
+
+pick_rep_set.py -i ./swarmOTUs/trimmed_seqs_otus.txt -f ./trimmed_seqs.fna -m most_abundant -o ./2014_final.fna -l ./2014final_log
+
+filter_fasta.py -f ./2014_final.fna -b ./swarmOTUs/otu_table_no_singletons.biom -o ./2014_final_no_singletons.fna
+```
+####The last command in UNIX will convert our final FASTA file to a tab-delimited file we can use to assign taxonomy in the BOLD database. This file will be useful when resolving taxonomic discrepancies in the last section: [Manual Vetting of Results]. The **`fasta_formatter`** command is part of the FASTX Toolkit. We run the command and then manually add column headers to the text file called: **seqID** and **seqs**.    
+
+```{r, engine="bash", echo=TRUE}
+fasta_formatter -i ./2014_final_no_singletons.fna -o ./2014tabseqs.txt -t
+```
+
+####The final **`2014tabseqs.txt`** file will look like this:
+
+
+| **seqID**       | **seqs**  |
+|:----------------|:---------:|
+| denovo0 F10R12_2 |     AATTTGAGCAG . . . . . |
+| denovo1 F10R12_1121 |     AATTTGAGCAGG . . . . . |
+| denovo10 F1R13_166841 |     AAGATGAGCTGG . . . . . |
+| . . . . . . . . . |     . . . . . |
+| denovo789 F10R5_2482 |     AAGATGCCTGGAA . . . . . |
+
+#### If you only have Illumina data, skip the [Ion Torrent](#Ion Torrent) section and go to the [Assign Taxonomy](#Assign Taxonomy) section
+<br>
+
+#<a id="Ion Torrent"></a>Ion Torrent PGM Workflow -- ___Run commands in UNIX___
+
+####The Ion Torrent Personal Genome Machine (PGM) is widely used for amplicon sequencing but the raw machine output is different than Illumina. Ion does not use the paired end read system; thus, we keep forward and reverse sequences separate and *do not*  try to join sequences. 
+
+####All commands in this section were run inside the QIIME Virtual Box created above in the [Install](#Install) section. Open the QIIME machine and start a new Terminal window. It should provide a command line prompt similar to this: qiime@qiime-190-virtual-box:
+
+<br>
+
+####If you will be using a similar workflow more than once, it helps to use the **`time`** UNIX command in front of other commands. This command returns the processing time, in minutes and seconds, which simply helps plan future data analyses. For example:
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\timeEx.jpg)
+
+<br>
+
+### **1)** Organize Forward and Reverse Files
+#### Amplicons are read in either forward **_or_**  reverse direction, depending on which end attached to the Ion chip. Thus, we expect 1 FASTQ file for each unique barcode used. In our case, we double barcoded samples (n = 50; 46 bat samples + 4 blanks) with 10 unique forward primers and 5 unique reverse primers, so we expect 15 fastq files. We know the files 1--10 were sequenced in the forward direction and files 11--15 were read in the reverse direction. The raw output folder should look like this:
+
+
+| **File Name**   | **Direction** |
+|:---------------:|:-------------:|
+| 2015-03-20.IonXpress_001.fastq | forward  |
+| 2015-03-20.IonXpress_002.fastq | forward  |
+| 2015-03-20.IonXpress_003.fastq | forward  |
+| . . . . . . . . .              | . . .    |
+| 2015-03-20.IonXpress_014.fastq | reverse  |
+| 2015-03-20.IonXpress_015.fastq | reverse  |
+<br>
+
+#### Create a new folder and move the expected files to that directory (i.e., IonXpress_001 to IonXpress_015). There will be other files in the directory containing reads not mapped back to a sample by forward/reverse barcode combination (i.e., IonXpress_075). Our new directory is called **`2014ION`**
+
+#### Ion Torrent results are not demultiplexed so first we created 2 sub-folders, **`forward`** and **`reverse`**, and put the appropriate IonXpress fastq files into each one. Next, we perform several steps to prepare all the forward FASTQ files, then repeat the process with the reverse FASTQ files, then put all files into 1 FASTA before picking OTUs.
+
+```{r, engine="bash", echo=TRUE}
+cd 2014ION
+
+mkdir forward
+
+mkdir reverse
+
+mv *001* *002* *003* *004* *005* *006* *007* *008* *009* *010*  ./forward
+
+mv *011* *012* *013* *014* *015*  ./reverse
+```
+<br>
+
+### **2)** Prepare Barcodes for each File
+####To simplify the demultiplexing process, we moved the 10 bp reverse barcodes to the front, just after the forward barcode, to create a new 20 bp unique 'barcode' for each sequence. For example:
+```{r, engine="bash", echo=TRUE}
+cd forward 
+
+#Note that the 10bp forward barcode changes in each command correspond to each file
+#The command searches the fastq file and moves the last 10bp to just after the forward barcode for each read
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GTTACCTTAG\2\1/;' < 2015-03-20.IonXpress_001.fastq > F01_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GTTCTCCTTA\2\1/;' < 2015-03-20.IonXpress_002.fastq > F02_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GAATCCTCTT\2\1/;' < 2015-03-20.IonXpress_003.fastq > F03_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GATCTTGGTA\2\1/;' < 2015-03-20.IonXpress_004.fastq > F04_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GTTCCTTCTG\2\1/;' < 2015-03-20.IonXpress_005.fastq > F05_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GAACTTGCAG\2\1/;' < 2015-03-20.IonXpress_006.fastq > F06_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GAATCACGAA\2\1/;' < 2015-03-20.IonXpress_007.fastq > F07_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GTTATCGGAA\2\1/;' < 2015-03-20.IonXpress_008.fastq > F08_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GTTCCGCTCA\2\1/;' < 2015-03-20.IonXpress_009.fastq > F09_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GTTCGGTCAG\2\1/;' < 2015-03-20.IonXpress_010.fastq > F10_barcodes.fastq
+```
+<br>
+
+### **3)** Concatenate Forward FASTQ files
+#### All sequences still have forward and reverse barcodes attached, in a new unique 20 bp forward barcode, so there is no chance of mixing up sequences by host sample.
+```{r, engine="bash", echo=TRUE}
+cat *_barcodes.fastq > forwardseqs.fastq
+```
+<br>
+
+### **4)** Convert FASTQ to FASTA
+#### We need separate FASTA and QUAL files for demultiplexing and quality filtering because downstream QIIME scripts require FASTA format as input.
+```{r, engine="bash", echo=TRUE}
+convert_fastaqual_fastq.py -f forwardseqs.fastq -c fastq_to_fastaqual  #took ~25 seconds with test set 
+```
+#### This will created 2 new files in the **`forward`** directory: **`forwardseqs.fna`** and **`forwardseqs.qual`**. These are the new FASTA file (.fna) and the associated quality file (QUAL).
+<br>
+
+### **5)** Validate Mapping File
+#### We validate the mapping file that tells QIIME which which barcodes and primers belong to each sample so that we can maintain the path from sequences back to host samples. Make sure the **`SampleMapF.txt`** file is in the **`forward`** directory.
+```{r, engine="bash", echo=TRUE}
+cd ..                   #change back to 2014ION dir
+
+validate_mapping_file.py -m SampleMapF.txt
+
+head SampleMapF.txt
+```
+#### If QIIME flags any errors, make changes as necessary; help can be found here: http://qiime.org/scripts/validate_mapping_file.html
+<br>
+
+####The mapping file should look like this. Notice the new 20 bp barcode created in step **2)** and the Ion-specific **GAT** adapter on the reverse primer:
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\SampleMapF.jpg)
+
+
+### **6)** Demultiplex and Quality Filter  
+#### During this step, we quality filter base calls less than Q20 and sequences less than 200 bp, assign QIIME labels to each sequence, corresponding to host sample, and then remove the new 20 bp barcode and both primers. These parameters can be changed with the **`-s (min_qual_score)`** and **`-l (min_seq_length)`** options. We also remove any sequences with a homopolymer run of 10 or more bp; there is a natural 8 bp conserved region in our target area. The expected length at this point is 234 bp.
+
+```{r, engine="bash", echo=TRUE}
+split_libraries.py -m SampleMapF.txt -f ./forward/forwardseqs.fna -q ./forward/forwardseqs.qual -o demultiplexedF -b 20 -H 10 -M 1 -s 20 -z truncate_remove   #took 1 min, 7 sec with test set
+```
+#####**This step can take a while to run, so one can make sure QIIME is not hung up by occasionally going into the newly created directory and right clicking on the output file to check file size and make sure it grows between checks. The process is done when the cursor prompt returns to the terminal window.**
+<br>
+
+### **7)** Repeat steps 2--6 for Reverse FASTQ files
+#####**Note that a separate mapping file is needed with primer sequences also reverse complemented: `SampleMapR.txt`.**
+```{r, engine="bash", echo=TRUE}
+cd ./reverse
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GATTCGAGGA\2\1/;' < 2015-03-20.IonXpress_011.fastq > R11_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GAACCACCTA\2\1/;' < 2015-03-20.IonXpress_012.fastq > R12_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GTCCGTTAGA\2\1/;' < 2015-03-20.IonXpress_013.fastq > R13_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GACACTCCAA\2\1/;' < 2015-03-20.IonXpress_014.fastq > R14_barcodes.fastq
+
+sed '2~4s/\(.*\)\(.\{10\}\)$/GACCTCTAGA\2\1/;' < 2015-03-20.IonXpress_015.fastq > R15_barcodes.fastq
+
+cat *_barcodes.fastq > reverseseqs.fastq
+
+convert_fastaqual_fastq.py -f reverseseqs.fastq -c fastq_to_fastaqual
+#creates 2 new files: reverseseqs.fna and reverseseqs.qual
+cd ..
+
+validate_mapping_file.py -m SampleMapR.txt
+
+split_libraries.py -m SampleMapR.txt -f ./reverse/reverseseqs.fna -q ./reverse/reverseseqs.qual -o demultiplexedR -b 20 -H 10 -M 1 -s 20 -z truncate_remove                 #if you get a high number of mismatches and sequences are discarded, double check that you have the right mapping file
+```
+#####**This step can take a while to run, so one can make sure QIIME is not hung up by occasionally going into the newly created directory and right clicking on the output file to check file size and make sure it grows between checks. The process is done when the cursor prompt returns to the terminal window.**
+<br>
+
+### **8)** Concatenate Forward and Reverse to 1 File
+#### First we rename the forward FASTA file (containing all the forward sequences now) and move it to our main project folder. Repeat for the reverse FASTA file, reverse complement, and then concatenate all sequences into a single file with everything in the 5' --> 3' orientation.
+
+####We reverse complement the sequences using the FASTX Toolkit, which must be installed in our QIIME Virtual Box or directly in Macqiime or Linux in the main working directory. We used a local copy of FASTX Toolkit 0.0.12. Reverse complementing can also be done with the QIIME **`adjust_seq_orientation.py`** script. We used the FASTX command because we will use another FASTX tool later in this section.
+```{r, engine="bash", echo=TRUE}
+cd demultiplexedF
+
+mv seqs.fna Fseqs.fna
+
+mv Fseqs.fna ..
+
+cd ..
+
+cd ./demultiplexedR
+
+mv seqs.fna Rseqs.fna
+
+mv Rseqs.fna ..
+
+cd ..
+
+fastx_reverse_complement -i ./Rseqs.fna  -o ./Rseqs_flipped.fna
+
+cat Fseqs.fna Rseqs_flipped.fna > 2014ionseqs.fna
+```
+<br>
+
+### **9)** Assign Similar Sequences to OTUs
+####Next we cluster similar sequences using the local alignment 'swarm' method and allowing only a 2 bp mismatch. Note that this sequence clustering is different than clustering of amplicons on the flow cell during Illumina sequencing.
+
+######Mahé F, Rognes T, Quince C, de Vargas C, Dunthorn M. (2014) Swarm: robust and fast clustering method for amplicon-based studies. PeerJ 2:e593 <http://dx.doi.org/10.7717/peerj.593>
+
+```{r, engine="bash", echo=TRUE} 
+pick_otus.py -i ./2014ionseqs.fna -m swarm --swarm_resolution 2 -o ./swarmOTUs   #took 1.8 sec with test set
+```
+#### Now we have a new directory with the clusters of sequences: **`swarmOTUs`**
+
+#####**This step can take a while to run, and no files are produced until the process is complete. So one can make sure QIIME is not hung up by using the** **`top`** **UNIX command in a new terminal window. The pick-otus QIIME command should be at the top of the list and using the greatest %CPU.**
+<br>
+
+### **10)** Build and Filter OTU Occurrence Table (BIOM)
+####We now create our BIOM table to keep track of which OTUs were present in each sample. We use the swarm output file `2014ionseqs_otus.txt` as input.
+```{r, engine="bash", echo=TRUE}
+make_otu_table.py -i ./swarmOTUs/2014ionseqs_otus.txt -o ./swarmOTUs/seqs.biom
+```
+####We filtered out low abundance OTU clusters (< 10 copies in at least 1 sample of the entire data set) before writing data to the table using a script that calls the 'pandas' python package. We used Python 2.7.3 that should come as a dependency with the QIIME install. The provided 'pandas_filter10.py' script has to be in the **`swarmOTUs`** directory.  
+
+```{r, engine="bash", echo=TRUE}
+cd ./swarmOTUs     #change to the new directory
+
+cp ../pandas_filter10.py .
+
+python pandas_filter10.py  #This script will find the seqs.biom file created as output in the last step
+```
+####This scipt creates a new file called **`exclude.txt`** that we can use in the next step to remove those low abundance OTU clusters.  
+
+####After removing the unwanted low abundance OTU clusters, we write the desired OTUs to a BIOM table in human-readable tabular format. To label the denovo OTUs, we use the **`pick_rep_set.py`** script to pick one representative sequence from each cluster. Then we pull those desired representative sequences from our original .fna file and write a new .fna. From here on out, we use the representative sequences from each OTU cluster to reduce processing demand.
+
+```{r, engine="bash", echo=TRUE}
+
+cd ..     #change back to the main working directory
+
+filter_otus_from_otu_table.py -i ./swarmOTUs/seqs.biom -o ./swarmOTUs/otu_table_no_singletons.biom -e ./swarmOTUs/exclude.txt
+
+biom convert -i ./swarmOTUs/otu_table_no_singletons.biom -o ./swarmOTUs/2014ion_biom_no_singletons.txt --table-type="OTU table" --to-tsv
+
+pick_rep_set.py -i ./swarmOTUs/2014ionseqs_otus.txt -f ./2014ionseqs.fna -m most_abundant -o ./2014ion_final.fna -l ./2014ion_final_log
+
+filter_fasta.py -f ./2014ion_final.fna -b ./swarmOTUs/otu_table_no_singletons.biom -o ./2014ion_final_no_singletons.fna
+```
+####The last command in UNIX will convert our final FASTA file to a tab-delimited file we can use to assign taxonomy in the BOLD database. This file will be useful when resolving taxonomic discrepancies in the last section: [Manual Vetting](#Manual Vetting). The **`fasta_formatter`** command is part of the FASTX Toolkit. We run the command and then manually add column headers to the text file called: **seqID** and **seqs**.  
+
+```{r, engine="bash", echo=TRUE}
+fasta_formatter -i ./2014ion_final_no_singletons.fna -o ./2014iontabseqs.txt -t
+```
+
+<br>
+
+#<a id="Assign Taxonomy"></a>Assign Taxonomy and Filter Results -- ___Run commands in R___
+
+####After transferring the **`2014tabseqs.txt`** and the **`2014_biom_no_singletons.txt`** files to a working directory outside of the QIIME system, we used several R packages to assign taxonomy and filter out unwanted returns, such as low similarity matches and those outside a reasonable geographic area. 
+
+####The following sections use the output files from the [Illumina Miseq](#Illumina MiSeq) section above. If you only have output from the [Ion Torrent](#Ion Torrent) section, use **`2014iontabseqs.txt`** and **`2014_ion_biom_no_singletons.txt`**
+<br>
+
+### **1)** RStudio and R Notebooks
+#### To edit source code or to run each step and follow the tutorial, the easiest method is to open the provided .Rmd (R Markdown) file in RStudio: https://www.rstudio.com/products/rstudio/download/.
+####We used RStudio Version 1.0.136 -- © 2009-2016 RStudio, Inc. Program R must first be installed on the same machine: https://www.r-project.org/. We used R version 3.3.2 (2016-10-31) -- "Sincere Pumpkin Patch". All remaining data processing steps in this section should be run in RStudio.
+```{r}
+install.packages('rmarkdown')
+library ('rmarkdown')
+```
+<br>
+
+### **2)** Set Working Directory and Read in Data
+#### Change directory path as needed.
+```{r, echo=TRUE, eval=TRUE, message=FALSE}
+setwd("D:\\Google Drive\\IONvsMISEQ")
+
+mydata <- read.table("2014tabseqs.txt", header = TRUE, sep = "\t", dec = ".", stringsAsFactors = FALSE)
+
+head(mydata)
+
+mydata2 <- as.list(setNames(mydata$seqs, mydata$seqID))  #make sure headers are not capitalized
+```
+<br>
+
+### **3)** Query BOLD for OTU Matches
+####Use the **`bold_identify`** function to get sequences from the BOLD API. This will return all the matches in BOLD, which should also include sequences mined from GenBank (https://www.ncbi.nlm.nih.gov/genbank/).
+```{r, echo=TRUE}
+install.packages('bold')
+
+library('bold')
+
+output <- bold_identify(sequences = mydata2, db = "COX1", response=FALSE) #This can take several hours to run
+```
+<br>
+
+### **4)** Trim Output by User-specific Number of Matches
+#### We trimmed our output to the top 40 matches for each OTU; this number can vary depending on project objectives. In many cases there will be up to 100 matches for each OTU. Results mined from GenBank are only returned at the Order level and require further investigation in the [Manual Vetting of Results] section. For our data, trimming to the 40 top matches left enough sequences to resolve discrepancies while also removing extranneous results, ultimately making it easier to parse through each OTU and assign taxonomy.
+```{r, echo=TRUE}
+outtax40 <- lapply(output, head, n=40)
+
+outtaxframe <- do.call("rbind", lapply(outtax40, data.frame))
+```
+####The **`outtaxframe`** returns the top 40 matches, by similarity, from the BOLD results.
+<br>
+
+### **5)** Filter out Seqs < 98% and Unlikely by Geography
+####This step not only filters out low percent similarity matches, but also helps with discrepancy resolution when several specimens from BOLD match one OTU at the same similarity.
+
+####We only kept matches that were > 98.4% but other studies have used lower % similarities. Without this filtering step it takes much longer to assign taxonomy with manual vetting of matches by geographic area. For example, even at > 98.4% similarity, it is possible for one OTU to match a moth specimen from the USA **and** a butterfly from Papua New Guinea.
+
+```{r, echo=TRUE, message=FALSE}
+#We used a custom header style for the final xlsx file
+
+install.packages('openxlsx')
+
+library('openxlsx')     #Must have Rtools installed and check box to edit PATH or afterwards do: Sys.setenv("R_ZIPCMD" = "C:/Rtools/bin/zip.exe") ##path to zip.exe
+
+HS <- createStyle(fontSize=13, fontColour='navy', numFmt='GENERAL', halign='center', valign='center', textDecoration='bold', wrapText=TRUE)
+```
+
+
+```{r, echo=TRUE, message=FALSE}
+install.packages('dplyr')
+
+library('dplyr')
+library('tibble')
+
+outtaxframe %<>%     #This only keeps rows that we want and updates the dataframe
+	rownames_to_column("seqID") %>%     
+	filter(specimen_country %in% c("United States", "Canada"), similarity >= 0.98)
+
+write.xlsx(outtaxframe, file='2014outtaxframe40.xlsx', asTable=FALSE, colNames=TRUE, rowNames=TRUE, headerStyle=HS)
+
+     #Might get an error if Rtools is not installed - follow error message suggestions to get Rtools
+```
+
+####The final filtered file should look like this, with up to 40 records for each denovo OTU:
+```{r, echo=FALSE, message=FALSE}
+
+mydata2 <- read.xlsx("D:\\Google Drive\\IONvsMISEQ\\Diss_proposal\\preyIDs\\2014Ion\\2014outtaxframe40.xlsx", colNames = TRUE)
+```
+
+<div class="table">
+```{r, echo=FALSE, results='asis', eval=TRUE, message=FALSE}
+library('knitr')
+kable(head(mydata2))
+```
+
+<br>
+
+#<a id="Manual Vetting"></a>Manual Vetting of Results -- ___Work in a Web Browser___
+
+####The 3 files of interest for assigning final taxonomy are: **`2014outtaxframe40.xlsx`**, **`2014tabseqs.txt`**, and **`2014final_no_singletons.txt`**.
+
+####First, we open the **`2014biom_no_singletons.txt`** file and convert any within-sample occurrences < 10 to 0 to remove low abundance OTU occurrences with simple find and replace commands in MS Excel. This step is to remove potential sequencing errors; the threshold of 10 is arbitrary and can be changed depending on project objectives. 
+
+####Next, we open **`2014outtaxframe40.xlsx`** and , and look for any discrepancies at the same similarity in our output from **`bold_identify`**, and then assign taxonomy in new columns in the **`2014final_no_singletons.txt`** file.
+
+###*Updating the BIOM table with Taxonomy*
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\firstLook.png) 
+
+<br>
+
+####Sometimes there are discrepancies in the results returned from **`bold_identify`** that we need to manually investigate.
+
+####In this example, results for OTU denovo118 match 6 different species in the same genus at 100%. We know that all of these matching specimen records could occur within our region because we filtered the **`2014outtaxframe40.xlsx`** based on similarity *and* geography. Nonetheless, we chose a simple example to demonstrate the process of how we learned to convert results into assigned taxonomy.
+
+###*Discrepancy Example*
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\discrepancyex.jpg) 
+
+<br>
+
+####Next, we go to our **`2014tabseqs.txt`** file to find the sequence for denovo118
+
+###*Find the Sequence in Question*
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\findtheseq.jpg)
+
+<br>
+
+####We cut and paste the sequence into the BOLD Identification browser in FASTA format (http://www.boldsystems.org/index.php/IDS_OpenIdEngine)
+
+###*Paste Sequence into BOLD*
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\pasteSeq.jpg)
+
+<br>
+
+####We get many matches at 100%, including some out of our area. There are several *Catocala spp.*, as expected. We don't expect any Nymphalidae butterflies in bat feces so we disregard those. That leaves *Piletocera sodalis* as another potential prey. 
+
+###*Re-examine the Matches*
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\idRequest.jpg)
+
+<br>
+
+####When we investigate *Piletocera sodalis* in the BOLD Taxonomy browser, we learn that it is only found in Japan, China, and Korea, so we disregard that potential prey. Because we still have 6 *Catocala spp.* possible, we can only assign taxonomy to OTU denovo118 as *Catocala spp.*
+
+###*Cross-reference with Expectations*
+![](D:\\Google Drive\\IONvsMISEQ\\BatDietWorkflow_files\\mothOutofArea.jpg)
